@@ -1,0 +1,16 @@
+{
+    "rewrites": [
+        {
+            "source": "/api/:match*",
+            "destination": "https://torre.ai/api/:match*"
+        },
+        {
+            "source": "/search-api/:match*",
+            "destination": "https://search.torre.co/:match*"
+        },
+        {
+            "source": "/(.*)",
+            "destination": "/index.html"
+        }
+    ]
+}

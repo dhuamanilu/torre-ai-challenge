@@ -128,14 +128,22 @@ npm run test:watch
 - Score calculation accuracy
 - Edge cases (empty skills, no matches)
 
+## ☁️ Deployment (Vercel)
+
+This project is configured for Vercel deployment with serverless proxy rewrites.
+
+1. Install Vercel CLI: `npm i -g vercel`
+2. Deploy: `vercel`
+3. The `vercel.json` configuration handles API proxying to avoid CORS issues in production.
+
 ## ⚖️ Trade-offs
 
 | Decision | Trade-off |
 |----------|-----------|
 | **Client-side only** | Simpler architecture, but CORS requires proxy |
-| **No backend** | Faster dev, but can't deploy API proxy to static hosting |
+| **No backend** | Faster dev, but can't deploy API proxy to static hosting (Fixed via Vercel Rewrites) |
 | **Simple match algorithm** | Understandable, but doesn't weight skill importance |
-| **Vite proxy** | Works in dev, but production needs serverless functions |
+| **Vite proxy** | Works in dev; `vercel.json` rewrites used for production |
 
 ## 🎯 Assumptions
 
@@ -146,11 +154,10 @@ npm run test:watch
 
 ## 🔮 Future Improvements
 
-- [ ] Weight skills by importance/recommendations
-- [ ] Add skill recommendations based on gaps
-- [ ] Export comparison as PDF
-- [ ] Deploy with serverless proxy (Vercel/Netlify functions)
-- [ ] Cache API responses for better UX
+- [ ] **AI Context Analysis**: Use LLM to match synonyms (e.g., "React.js" == "React")
+- [ ] **Salary Analysis**: Compare expected vs offered compensation
+- [ ] **Search History**: Persist recent usernames/searches
+- [ ] **PDF Export**: Downloadable gap analysis report
 
 ## 📚 APIs Used
 
