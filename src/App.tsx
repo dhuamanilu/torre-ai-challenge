@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { fetchUserProfile, fetchJobDetails, searchJobs, TorreProfile, TorreJob, JobSearchResult } from './services/torreApi';
 import { compareSkills, MatchResult, getLearningResources, LearningResource } from './utils/skillMatcher';
+import { RadarChart } from './components/RadarChart';
 import './App.css';
 
 interface JobComparison {
@@ -319,6 +320,16 @@ function App() {
                                         <div className="score-simple">
                                             Simple: {currentComp.result.score}%
                                         </div>
+                                    </div>
+
+                                    <div className="radar-chart-wrapper">
+                                        <RadarChart
+                                            matched={currentComp.result.matched}
+                                            partial={currentComp.result.partial}
+                                            missing={currentComp.result.missing}
+                                            width={280}
+                                            height={280}
+                                        />
                                     </div>
 
                                     <div className="job-card">
