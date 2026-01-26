@@ -14,12 +14,33 @@ function App() {
     const [selectedJobs, setSelectedJobs] = useState<JobSearchResult[]>([]);
     const [searchResults, setSearchResults] = useState<JobSearchResult[]>([]);
     const [profile, setProfile] = useState<TorreProfile | null>(null);
+    const [profilePreview, setProfilePreview] = useState<TorreProfile | null>(null);
+    const [loadingProfile, setLoadingProfile] = useState(false);
     const [comparisons, setComparisons] = useState<JobComparison[]>([]);
     const [activeComparison, setActiveComparison] = useState<number>(0);
     const [loading, setLoading] = useState(false);
     const [searching, setSearching] = useState(false);
     const [error, setError] = useState('');
     const [showLearning, setShowLearning] = useState<string | null>(null);
+
+    const handleLoadProfile = async () => {
+        if (!username.trim()) {
+            setError('Please enter your Torre username');
+            return;
+        }
+
+        setLoadingProfile(true);
+        setError('');
+
+        try {
+            const profileData = await fetchUserProfile(username.trim());
+            setProfilePreview(profileData);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to load profile');
+        } finally {
+            setLoadingProfile(false);
+        }
+    };
 
     const handleSearch = async () => {
         if (!jobSearch.trim()) {
@@ -102,16 +123,64 @@ function App() {
                 <section className="input-section">
                     <div className="input-group">
                         <label htmlFor="username">Torre Username</label>
-                        <input
-                            id="username"
-                            type="text"
-                            placeholder="e.g., torrenegra"
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
-                            disabled={loading}
-                        />
-                        <span className="hint">Found at the end of your Torre profile URL</span>
+                        <div className="search-row">
+                            <input
+                                id="username"
+                                type="text"
+                                placeholder="e.g., torrenegra"
+                                value={username}
+                                onChange={(e) => setUsername(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleLoadProfile()}
+                                disabled={loading || loadingProfile}
+                            />
+                            <button
+                                className="search-btn"
+                                onClick={handleLoadProfile}
+                                disabled={loading || loadingProfile || !username.trim()}
+                            >
+                                {loadingProfile ? '...' : '👤'}
+                            </button>
+                        </div>
+                        <span className="hint">Enter username and click 👤 to preview your profile</span>
                     </div>
+
+                    {profilePreview && (
+                        <div className="profile-summary-card">
+                            <div className="profile-summary-header">
+                                {profilePreview.person.pictureThumbnail && (
+                                    <img
+                                        src={profilePreview.person.pictureThumbnail}
+                                        alt={profilePreview.person.name}
+                                        className="profile-summary-image"
+                                    />
+                                )}
+                                <div className="profile-summary-info">
+                                    <h3>{profilePreview.person.name}</h3>
+                                    <p>{profilePreview.person.professionalHeadline}</p>
+                                    <span className="skill-count">
+                                        {profilePreview.strengths.length} skills on profile
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="top-skills">
+                                <h4>🌟 Your Top Skills</h4>
+                                <div className="top-skills-list">
+                                    {profilePreview.strengths
+                                        .sort((a, b) => (b.weight || 0) - (a.weight || 0))
+                                        .slice(0, 8)
+                                        .map((skill) => (
+                                            <div key={skill.id} className="top-skill-tag">
+                                                <span className="skill-name">{skill.name}</span>
+                                                <span className="skill-proficiency">{skill.proficiency}</span>
+                                                {skill.weight > 0 && (
+                                                    <span className="skill-weight">⭐ {Math.round(skill.weight)}</span>
+                                                )}
+                                            </div>
+                                        ))}
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     <div className="input-group">
                         <label htmlFor="jobSearch">Search Jobs</label>

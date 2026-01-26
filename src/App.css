@@ -140,6 +140,90 @@ body {
     color: var(--error);
 }
 
+/* Profile Summary Card */
+.profile-summary-card {
+    background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-secondary) 100%);
+    border-radius: 16px;
+    padding: 1.5rem;
+    border: 1px solid var(--border);
+    margin-bottom: 1.5rem;
+    animation: fadeIn 0.3s ease;
+}
+
+.profile-summary-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.profile-summary-image {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid var(--accent);
+}
+
+.profile-summary-info h3 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.profile-summary-info p {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.25rem;
+}
+
+.skill-count {
+    font-size: 0.8rem;
+    color: var(--accent);
+    font-weight: 500;
+}
+
+.top-skills h4 {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.75rem;
+}
+
+.top-skills-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.top-skill-tag {
+    display: inline-flex;
+    flex-direction: column;
+    padding: 0.5rem 0.75rem;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    border-left: 3px solid var(--accent);
+    font-size: 0.85rem;
+}
+
+.top-skill-tag .skill-name {
+    font-weight: 500;
+    margin-bottom: 0.15rem;
+}
+
+.top-skill-tag .skill-proficiency {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+}
+
+.top-skill-tag .skill-weight {
+    font-size: 0.7rem;
+    color: var(--warning);
+    margin-top: 0.15rem;
+}
+
+
 /* Results Section */
 .results-section {
     animation: fadeIn 0.5s ease;
