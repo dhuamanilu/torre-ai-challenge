@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { compareSkills, MatchResult } from '../utils/skillMatcher';
+import { compareSkills, MatchResult, getLearningResources } from '../utils/skillMatcher';
 import type { TorreProfile, TorreJob } from '../services/torreApi';
 
 // Mock profile data
-const createMockProfile = (skills: Array<{ name: string; proficiency: string }>): TorreProfile => ({
+const createMockProfile = (skills: Array<{ name: string; proficiency: string; weight?: number }>): TorreProfile => ({
     person: {
         name: 'Test User',
         professionalHeadline: 'Software Developer',
@@ -13,7 +13,7 @@ const createMockProfile = (skills: Array<{ name: string; proficiency: string }>)
         code: index,
         name: skill.name,
         proficiency: skill.proficiency,
-        weight: 1,
+        weight: skill.weight || 0,
     })),
     stats: {
         strengths: skills.length,
@@ -117,7 +117,6 @@ describe('compareSkills', () => {
 
         const result = compareSkills(profile, job);
 
-        // 1 matched + 1 partial * 0.5 = 1.5 / 4 = 37.5% -> 38% rounded
         expect(result.matched.length).toBe(1);
         expect(result.partial.length).toBe(1);
         expect(result.missing.length).toBe(2);
@@ -146,5 +145,50 @@ describe('compareSkills', () => {
 
         expect(result.score).toBe(0);
         expect(result.missing.length).toBe(1);
+    });
+
+    it('should return weightedScore alongside simple score', () => {
+        const profile = createMockProfile([
+            { name: 'JavaScript', proficiency: 'expert', weight: 50 },
+        ]);
+        const job = createMockJob([
+            { name: 'JavaScript', experience: '1-3-years' },
+        ]);
+
+        const result = compareSkills(profile, job);
+
+        expect(result.score).toBeDefined();
+        expect(result.weightedScore).toBeDefined();
+        expect(typeof result.weightedScore).toBe('number');
+    });
+
+    it('should include skill weight in matched results', () => {
+        const profile = createMockProfile([
+            { name: 'React', proficiency: 'expert', weight: 75 },
+        ]);
+        const job = createMockJob([
+            { name: 'React', experience: '1-3-years' },
+        ]);
+
+        const result = compareSkills(profile, job);
+
+        expect(result.matched[0].weight).toBe(75);
+    });
+});
+
+describe('getLearningResources', () => {
+    it('should return learning resources for a skill', () => {
+        const resources = getLearningResources('JavaScript');
+
+        expect(resources.length).toBeGreaterThan(0);
+        expect(resources.some(r => r.platform === 'Coursera')).toBe(true);
+        expect(resources.some(r => r.platform === 'Udemy')).toBe(true);
+        expect(resources.some(r => r.platform === 'YouTube')).toBe(true);
+    });
+
+    it('should encode skill names in URLs', () => {
+        const resources = getLearningResources('React Native');
+
+        expect(resources[0].url).toContain('React%20Native');
     });
 });
