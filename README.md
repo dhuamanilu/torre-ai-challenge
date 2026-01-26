@@ -29,6 +29,7 @@ Open http://localhost:5173 and:
 ## 📸 Features
 
 - 🔍 **Job Search**: Search for jobs by keyword - no need to find job IDs
+- 👤 **Profile Summary**: View your top skills before starting analysis
 - ✅ **Skill Matching**: Compares your skills against job requirements
 - 📊 **Match Score**: Visual percentage showing compatibility
 - 🎨 **Color-coded Results**: Green (matched), yellow (partial), red (missing)
