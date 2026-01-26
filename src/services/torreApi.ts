@@ -1,6 +1,7 @@
 // Torre API Service Layer
 // Using relative path to go through Vite proxy (avoids CORS)
 const TORRE_API_BASE = '/api';
+const TORRE_SEARCH_BASE = '/search-api';
 
 export interface TorreProfile {
     person: {
@@ -44,6 +45,27 @@ export interface TorreJob {
     locations: string[];
 }
 
+export interface JobSearchResult {
+    id: string;
+    objective: string;
+    organizations: Array<{
+        name: string;
+        picture?: string;
+    }>;
+    remote: boolean;
+    compensation?: {
+        currency: string;
+        minAmount?: number;
+        maxAmount?: number;
+    };
+    locations: string[];
+}
+
+export interface JobSearchResponse {
+    results: JobSearchResult[];
+    total: number;
+}
+
 export async function fetchUserProfile(username: string): Promise<TorreProfile> {
     const response = await fetch(`${TORRE_API_BASE}/genome/bios/${username}`);
 
@@ -69,3 +91,41 @@ export async function fetchJobDetails(jobId: string): Promise<TorreJob> {
 
     return response.json();
 }
+
+export async function searchJobs(keyword: string, limit: number = 10): Promise<JobSearchResponse> {
+    const response = await fetch(
+        `${TORRE_SEARCH_BASE}/opportunities/_search?size=${limit}&lang=en`,
+        {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                and: [
+                    {
+                        keywords: {
+                            term: keyword,
+                            locale: 'en',
+                        },
+                    },
+                    {
+                        status: {
+                            code: 'open',
+                        },
+                    },
+                ],
+            }),
+        }
+    );
+
+    if (!response.ok) {
+        throw new Error(`Failed to search jobs: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return {
+        results: data.results || [],
+        total: data.total || 0,
+    };
+}
+
