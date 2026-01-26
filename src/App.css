@@ -226,10 +226,37 @@ body {
 
 .score-progress {
     fill: none;
-    stroke: url(#gradient);
+    stroke: var(--accent);
     stroke-width: 8;
     stroke-linecap: round;
-    transition: stroke-dasharray 1s ease;
+    animation: scoreAnimation 1.5s ease-out forwards;
+}
+
+@keyframes scoreAnimation {
+    from {
+        stroke-dasharray: 0 283;
+    }
+}
+
+.score-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    animation: fadeInScore 0.5s ease-out 0.5s both;
+}
+
+@keyframes fadeInScore {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.5);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
 }
 
 .score-text {
@@ -427,14 +454,165 @@ body {
     color: var(--text-secondary);
 }
 
-.selected-job-badge {
-    padding: 0.75rem 1rem;
-    background: rgba(34, 197, 94, 0.1);
-    border: 1px solid var(--success);
-    border-radius: 8px;
-    color: var(--success);
+/* Selected Jobs Tags */
+.selected-jobs {
     margin-bottom: 1rem;
+}
+
+.selected-jobs h4 {
     font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+}
+
+.selected-job-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.selected-job-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: var(--accent);
+    color: white;
+    border-radius: 20px;
+    font-size: 0.85rem;
+}
+
+.selected-job-tag button {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 0;
+    line-height: 1;
+    opacity: 0.8;
+}
+
+.selected-job-tag button:hover {
+    opacity: 1;
+}
+
+/* Job Tabs */
+.job-tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+}
+
+.job-tab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 1rem 1.5rem;
+    background: var(--bg-card);
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 150px;
+}
+
+.job-tab:hover {
+    border-color: var(--accent);
+}
+
+.job-tab.active {
+    border-color: var(--accent);
+    background: linear-gradient(135deg, var(--accent) 0%, #8b5cf6 100%);
+}
+
+.tab-score {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.tab-title {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 120px;
+}
+
+.job-tab.active .tab-title {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+/* Score Container */
+.score-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.score-simple {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+/* Weight Badge */
+.weight-badge {
+    font-size: 0.7rem;
+    color: var(--warning);
+    margin-left: 0.25rem;
+}
+
+/* Learning Resources */
+.skill-tag.clickable {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.skill-tag.clickable:hover {
+    background: var(--bg-card);
+}
+
+.learn-btn {
+    font-size: 0.75rem;
+    color: var(--accent);
+    margin-left: auto;
+}
+
+.learning-resources {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border);
+    width: 100%;
+}
+
+.resource-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.4rem 0.75rem;
+    background: var(--bg-card);
+    border-radius: 6px;
+    color: var(--text-primary);
+    text-decoration: none;
+    font-size: 0.8rem;
+    transition: all 0.2s ease;
+}
+
+.resource-link:hover {
+    background: var(--accent);
+}
+
+.skill-name {
+    font-weight: 500;
 }
 
 /* Footer */
@@ -457,5 +635,13 @@ body {
 
     .score-circle {
         order: -1;
+    }
+
+    .job-tabs {
+        flex-direction: column;
+    }
+
+    .job-tab {
+        min-width: 100%;
     }
 }
