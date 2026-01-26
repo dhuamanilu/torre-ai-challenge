@@ -30,6 +30,7 @@ Open http://localhost:5173 and:
 
 - 🔍 **Job Search**: Search for jobs by keyword - no need to find job IDs
 - 👤 **Profile Summary**: View your top skills before starting analysis
+- 🕸️ **Radar Chart**: Visualizes your skill shape across Frontend, Backend, Tools, etc.
 - ✅ **Skill Matching**: Compares your skills against job requirements
 - 📊 **Match Score**: Visual percentage showing compatibility
 - 🎨 **Color-coded Results**: Green (matched), yellow (partial), red (missing)
