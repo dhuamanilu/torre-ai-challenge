@@ -1,3 +1,4 @@
+/// <reference types="vitest" />
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
@@ -10,6 +11,18 @@ export default defineConfig({
                 changeOrigin: true,
                 secure: true,
             },
+            '/search-api': {
+                target: 'https://search.torre.co',
+                changeOrigin: true,
+                secure: true,
+                rewrite: (path) => path.replace(/^\/search-api/, ''),
+            },
         },
     },
+    test: {
+        globals: true,
+        environment: 'jsdom',
+    },
 })
+
+
