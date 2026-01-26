@@ -1,19 +1,25 @@
 import { useState } from 'react';
 import { fetchUserProfile, fetchJobDetails, searchJobs, TorreProfile, TorreJob, JobSearchResult } from './services/torreApi';
-import { compareSkills, MatchResult } from './utils/skillMatcher';
+import { compareSkills, MatchResult, getLearningResources, LearningResource } from './utils/skillMatcher';
 import './App.css';
+
+interface JobComparison {
+    job: TorreJob;
+    result: MatchResult;
+}
 
 function App() {
     const [username, setUsername] = useState('');
     const [jobSearch, setJobSearch] = useState('');
-    const [selectedJobId, setSelectedJobId] = useState('');
+    const [selectedJobs, setSelectedJobs] = useState<JobSearchResult[]>([]);
     const [searchResults, setSearchResults] = useState<JobSearchResult[]>([]);
     const [profile, setProfile] = useState<TorreProfile | null>(null);
-    const [job, setJob] = useState<TorreJob | null>(null);
-    const [matchResult, setMatchResult] = useState<MatchResult | null>(null);
+    const [comparisons, setComparisons] = useState<JobComparison[]>([]);
+    const [activeComparison, setActiveComparison] = useState<number>(0);
     const [loading, setLoading] = useState(false);
     const [searching, setSearching] = useState(false);
     const [error, setError] = useState('');
+    const [showLearning, setShowLearning] = useState<string | null>(null);
 
     const handleSearch = async () => {
         if (!jobSearch.trim()) {
@@ -24,7 +30,6 @@ function App() {
         setSearching(true);
         setError('');
         setSearchResults([]);
-        setSelectedJobId('');
 
         try {
             const results = await searchJobs(jobSearch.trim());
@@ -39,9 +44,12 @@ function App() {
         }
     };
 
-    const handleSelectJob = (jobId: string) => {
-        setSelectedJobId(jobId);
-        setSearchResults([]);
+    const handleSelectJob = (job: JobSearchResult) => {
+        if (selectedJobs.some(j => j.id === job.id)) {
+            setSelectedJobs(selectedJobs.filter(j => j.id !== job.id));
+        } else if (selectedJobs.length < 3) {
+            setSelectedJobs([...selectedJobs, job]);
+        }
     };
 
     const handleAnalyze = async () => {
@@ -49,26 +57,31 @@ function App() {
             setError('Please enter your Torre username');
             return;
         }
-        if (!selectedJobId) {
-            setError('Please search and select a job first');
+        if (selectedJobs.length === 0) {
+            setError('Please select at least one job');
             return;
         }
 
         setLoading(true);
         setError('');
-        setMatchResult(null);
+        setComparisons([]);
 
         try {
-            const [profileData, jobData] = await Promise.all([
-                fetchUserProfile(username.trim()),
-                fetchJobDetails(selectedJobId),
-            ]);
-
+            const profileData = await fetchUserProfile(username.trim());
             setProfile(profileData);
-            setJob(jobData);
 
-            const result = compareSkills(profileData, jobData);
-            setMatchResult(result);
+            const jobPromises = selectedJobs.map(j => fetchJobDetails(j.id));
+            const jobs = await Promise.all(jobPromises);
+
+            const newComparisons: JobComparison[] = jobs.map(job => ({
+                job,
+                result: compareSkills(profileData, job),
+            }));
+
+            // Sort by score (highest first)
+            newComparisons.sort((a, b) => b.result.weightedScore - a.result.weightedScore);
+            setComparisons(newComparisons);
+            setActiveComparison(0);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'An error occurred');
         } finally {
@@ -76,11 +89,13 @@ function App() {
         }
     };
 
+    const currentComp = comparisons[activeComparison];
+
     return (
         <div className="app">
             <header className="header">
                 <h1>🎯 Skill Gap Analyzer</h1>
-                <p className="subtitle">Compare your Torre profile skills against job requirements</p>
+                <p className="subtitle">Compare your Torre profile skills against multiple job requirements</p>
             </header>
 
             <main className="main">
@@ -118,18 +133,18 @@ function App() {
                                 {searching ? '...' : '🔍'}
                             </button>
                         </div>
-                        <span className="hint">Search for jobs by title or keyword</span>
+                        <span className="hint">Select up to 3 jobs to compare</span>
                     </div>
 
                     {searchResults.length > 0 && (
                         <div className="search-results">
-                            <h4>Select a job ({searchResults.length} results)</h4>
+                            <h4>Select jobs to compare ({selectedJobs.length}/3 selected)</h4>
                             <div className="job-list">
                                 {searchResults.map((result) => (
                                     <div
                                         key={result.id}
-                                        className={`job-item ${selectedJobId === result.id ? 'selected' : ''}`}
-                                        onClick={() => handleSelectJob(result.id)}
+                                        className={`job-item ${selectedJobs.some(j => j.id === result.id) ? 'selected' : ''}`}
+                                        onClick={() => handleSelectJob(result)}
                                     >
                                         <div className="job-item-info">
                                             <strong>{result.objective}</strong>
@@ -154,132 +169,186 @@ function App() {
                         </div>
                     )}
 
-                    {selectedJobId && (
-                        <div className="selected-job-badge">
-                            ✅ Job selected: {selectedJobId}
+                    {selectedJobs.length > 0 && (
+                        <div className="selected-jobs">
+                            <h4>Selected Jobs:</h4>
+                            <div className="selected-job-tags">
+                                {selectedJobs.map(job => (
+                                    <span key={job.id} className="selected-job-tag">
+                                        {job.objective}
+                                        <button onClick={() => handleSelectJob(job)}>×</button>
+                                    </span>
+                                ))}
+                            </div>
                         </div>
                     )}
 
                     <button
                         className="analyze-btn"
                         onClick={handleAnalyze}
-                        disabled={loading || !username.trim() || !selectedJobId}
+                        disabled={loading || !username.trim() || selectedJobs.length === 0}
                     >
-                        {loading ? 'Analyzing...' : 'Analyze Skill Gap'}
+                        {loading ? 'Analyzing...' : `Analyze ${selectedJobs.length} Job${selectedJobs.length !== 1 ? 's' : ''}`}
                     </button>
 
                     {error && <div className="error">{error}</div>}
                 </section>
 
-                {matchResult && profile && job && (
+                {comparisons.length > 0 && profile && (
                     <section className="results-section">
-                        <div className="comparison-header">
-                            <div className="profile-card">
-                                {profile.person.pictureThumbnail && (
-                                    <img
-                                        src={profile.person.pictureThumbnail}
-                                        alt={profile.person.name}
-                                        className="profile-image"
-                                    />
-                                )}
-                                <div className="profile-info">
-                                    <h3>{profile.person.name}</h3>
-                                    <p>{profile.person.professionalHeadline}</p>
-                                </div>
+                        {comparisons.length > 1 && (
+                            <div className="job-tabs">
+                                {comparisons.map((comp, idx) => (
+                                    <button
+                                        key={comp.job.id}
+                                        className={`job-tab ${idx === activeComparison ? 'active' : ''}`}
+                                        onClick={() => setActiveComparison(idx)}
+                                    >
+                                        <span className="tab-score">{comp.result.weightedScore}%</span>
+                                        <span className="tab-title">{comp.job.objective}</span>
+                                    </button>
+                                ))}
                             </div>
+                        )}
 
-                            <div className="score-circle">
-                                <svg viewBox="0 0 100 100">
-                                    <circle
-                                        className="score-bg"
-                                        cx="50"
-                                        cy="50"
-                                        r="45"
-                                    />
-                                    <circle
-                                        className="score-progress"
-                                        cx="50"
-                                        cy="50"
-                                        r="45"
-                                        style={{
-                                            strokeDasharray: `${matchResult.score * 2.83} 283`,
-                                        }}
-                                    />
-                                </svg>
-                                <div className="score-text">
-                                    <span className="score-value">{matchResult.score}%</span>
-                                    <span className="score-label">Match</span>
-                                </div>
-                            </div>
+                        {currentComp && (
+                            <>
+                                <div className="comparison-header">
+                                    <div className="profile-card">
+                                        {profile.person.pictureThumbnail && (
+                                            <img
+                                                src={profile.person.pictureThumbnail}
+                                                alt={profile.person.name}
+                                                className="profile-image"
+                                            />
+                                        )}
+                                        <div className="profile-info">
+                                            <h3>{profile.person.name}</h3>
+                                            <p>{profile.person.professionalHeadline}</p>
+                                        </div>
+                                    </div>
 
-                            <div className="job-card">
-                                {job.organizations[0]?.picture && (
-                                    <img
-                                        src={job.organizations[0].picture}
-                                        alt={job.organizations[0].name}
-                                        className="job-image"
-                                    />
-                                )}
-                                <div className="job-info">
-                                    <h3>{job.objective}</h3>
-                                    <p>{job.organizations[0]?.name || 'Unknown Company'}</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="skills-breakdown">
-                            <div className="skill-category matched">
-                                <h4>✅ Skills You Have ({matchResult.matched.length})</h4>
-                                <div className="skill-list">
-                                    {matchResult.matched.length === 0 ? (
-                                        <p className="empty-message">No matched skills found</p>
-                                    ) : (
-                                        matchResult.matched.map((skill) => (
-                                            <div key={skill.name} className="skill-tag">
-                                                {skill.name}
-                                                <span className="proficiency">{skill.userProficiency}</span>
+                                    <div className="score-container">
+                                        <div className="score-circle" key={`${currentComp.job.id}-${activeComparison}`}>
+                                            <svg viewBox="0 0 100 100">
+                                                <circle className="score-bg" cx="50" cy="50" r="45" />
+                                                <circle
+                                                    className="score-progress"
+                                                    cx="50"
+                                                    cy="50"
+                                                    r="45"
+                                                    style={{
+                                                        strokeDasharray: `${currentComp.result.weightedScore * 2.83} 283`,
+                                                    }}
+                                                />
+                                            </svg>
+                                            <div className="score-text">
+                                                <span className="score-value">{currentComp.result.weightedScore}%</span>
+                                                <span className="score-label">Weighted</span>
                                             </div>
-                                        ))
-                                    )}
-                                </div>
-                            </div>
+                                        </div>
+                                        <div className="score-simple">
+                                            Simple: {currentComp.result.score}%
+                                        </div>
+                                    </div>
 
-                            <div className="skill-category partial">
-                                <h4>⚠️ Skills to Improve ({matchResult.partial.length})</h4>
-                                <div className="skill-list">
-                                    {matchResult.partial.length === 0 ? (
-                                        <p className="empty-message">No partial matches</p>
-                                    ) : (
-                                        matchResult.partial.map((skill) => (
-                                            <div key={skill.name} className="skill-tag">
-                                                {skill.name}
-                                                <span className="proficiency">
-                                                    {skill.userProficiency} → {skill.requiredExperience}
-                                                </span>
-                                            </div>
-                                        ))
-                                    )}
+                                    <div className="job-card">
+                                        {currentComp.job.organizations[0]?.picture && (
+                                            <img
+                                                src={currentComp.job.organizations[0].picture}
+                                                alt={currentComp.job.organizations[0].name}
+                                                className="job-image"
+                                            />
+                                        )}
+                                        <div className="job-info">
+                                            <h3>{currentComp.job.objective}</h3>
+                                            <p>{currentComp.job.organizations[0]?.name || 'Unknown Company'}</p>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
 
-                            <div className="skill-category missing">
-                                <h4>❌ Skills to Learn ({matchResult.missing.length})</h4>
-                                <div className="skill-list">
-                                    {matchResult.missing.length === 0 ? (
-                                        <p className="empty-message">No missing skills - great match!</p>
-                                    ) : (
-                                        matchResult.missing.map((skill) => (
-                                            <div key={skill.name} className="skill-tag">
-                                                {skill.name}
-                                                {skill.requiredExperience && (
-                                                    <span className="proficiency">requires {skill.requiredExperience}</span>
-                                                )}
-                                            </div>
-                                        ))
-                                    )}
+                                <div className="skills-breakdown">
+                                    <div className="skill-category matched">
+                                        <h4>✅ Skills You Have ({currentComp.result.matched.length})</h4>
+                                        <div className="skill-list">
+                                            {currentComp.result.matched.length === 0 ? (
+                                                <p className="empty-message">No matched skills found</p>
+                                            ) : (
+                                                currentComp.result.matched.map((skill) => (
+                                                    <div key={skill.name} className="skill-tag">
+                                                        <span className="skill-name">{skill.name}</span>
+                                                        <span className="proficiency">{skill.userProficiency}</span>
+                                                        {skill.weight && skill.weight > 0 && (
+                                                            <span className="weight-badge" title="Skill strength">
+                                                                ⭐ {Math.round(skill.weight)}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="skill-category partial">
+                                        <h4>⚠️ Skills to Improve ({currentComp.result.partial.length})</h4>
+                                        <div className="skill-list">
+                                            {currentComp.result.partial.length === 0 ? (
+                                                <p className="empty-message">No partial matches</p>
+                                            ) : (
+                                                currentComp.result.partial.map((skill) => (
+                                                    <div key={skill.name} className="skill-tag">
+                                                        <span className="skill-name">{skill.name}</span>
+                                                        <span className="proficiency">
+                                                            {skill.userProficiency} → {skill.requiredExperience}
+                                                        </span>
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="skill-category missing">
+                                        <h4>❌ Skills to Learn ({currentComp.result.missing.length})</h4>
+                                        <div className="skill-list">
+                                            {currentComp.result.missing.length === 0 ? (
+                                                <p className="empty-message">No missing skills - great match!</p>
+                                            ) : (
+                                                currentComp.result.missing.map((skill) => (
+                                                    <div key={skill.name} className="skill-tag clickable" onClick={() => setShowLearning(showLearning === skill.name ? null : skill.name)}>
+                                                        <span className="skill-name">{skill.name}</span>
+                                                        {skill.requiredExperience && (
+                                                            <span className="proficiency">requires {skill.requiredExperience}</span>
+                                                        )}
+                                                        <span className="learn-btn">📚 Learn</span>
+
+                                                        {showLearning === skill.name && (
+                                                            <div className="learning-resources">
+                                                                {getLearningResources(skill.name).map((resource: LearningResource) => (
+                                                                    <a
+                                                                        key={resource.platform}
+                                                                        href={resource.url}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        className="resource-link"
+                                                                        onClick={(e) => e.stopPropagation()}
+                                                                    >
+                                                                        {resource.platform === 'Coursera' && '🎓'}
+                                                                        {resource.platform === 'Udemy' && '📺'}
+                                                                        {resource.platform === 'YouTube' && '▶️'}
+                                                                        {resource.platform === 'Google' && '📖'}
+                                                                        {' '}{resource.platform}
+                                                                    </a>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
+                            </>
+                        )}
                     </section>
                 )}
             </main>
