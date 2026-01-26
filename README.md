@@ -185,3 +185,7 @@ npm run preview
 ## 📝 License
 
 Built for Torre.ai Engineering Assessment
+
+## 🤖 Prompts
+
+The full conversation log and prompts used to build this application can be found in [prompts.md](./prompts.md).
