@@ -1,20 +1,56 @@
-import React, { useState } from 'react';
-import { fetchUserProfile, fetchJobDetails, TorreProfile, TorreJob } from './services/torreApi';
+import { useState } from 'react';
+import { fetchUserProfile, fetchJobDetails, searchJobs, TorreProfile, TorreJob, JobSearchResult } from './services/torreApi';
 import { compareSkills, MatchResult } from './utils/skillMatcher';
 import './App.css';
 
 function App() {
     const [username, setUsername] = useState('');
-    const [jobId, setJobId] = useState('');
+    const [jobSearch, setJobSearch] = useState('');
+    const [selectedJobId, setSelectedJobId] = useState('');
+    const [searchResults, setSearchResults] = useState<JobSearchResult[]>([]);
     const [profile, setProfile] = useState<TorreProfile | null>(null);
     const [job, setJob] = useState<TorreJob | null>(null);
     const [matchResult, setMatchResult] = useState<MatchResult | null>(null);
     const [loading, setLoading] = useState(false);
+    const [searching, setSearching] = useState(false);
     const [error, setError] = useState('');
 
+    const handleSearch = async () => {
+        if (!jobSearch.trim()) {
+            setError('Please enter a job search term');
+            return;
+        }
+
+        setSearching(true);
+        setError('');
+        setSearchResults([]);
+        setSelectedJobId('');
+
+        try {
+            const results = await searchJobs(jobSearch.trim());
+            setSearchResults(results.results);
+            if (results.results.length === 0) {
+                setError('No jobs found. Try a different search term.');
+            }
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to search jobs');
+        } finally {
+            setSearching(false);
+        }
+    };
+
+    const handleSelectJob = (jobId: string) => {
+        setSelectedJobId(jobId);
+        setSearchResults([]);
+    };
+
     const handleAnalyze = async () => {
-        if (!username.trim() || !jobId.trim()) {
-            setError('Please enter both username and job ID');
+        if (!username.trim()) {
+            setError('Please enter your Torre username');
+            return;
+        }
+        if (!selectedJobId) {
+            setError('Please search and select a job first');
             return;
         }
 
@@ -25,7 +61,7 @@ function App() {
         try {
             const [profileData, jobData] = await Promise.all([
                 fetchUserProfile(username.trim()),
-                fetchJobDetails(jobId.trim()),
+                fetchJobDetails(selectedJobId),
             ]);
 
             setProfile(profileData);
@@ -63,22 +99,71 @@ function App() {
                     </div>
 
                     <div className="input-group">
-                        <label htmlFor="jobId">Job ID</label>
-                        <input
-                            id="jobId"
-                            type="text"
-                            placeholder="e.g., PW9yY63W"
-                            value={jobId}
-                            onChange={(e) => setJobId(e.target.value)}
-                            disabled={loading}
-                        />
-                        <span className="hint">Found at the end of the job posting URL</span>
+                        <label htmlFor="jobSearch">Search Jobs</label>
+                        <div className="search-row">
+                            <input
+                                id="jobSearch"
+                                type="text"
+                                placeholder="e.g., React Developer, Product Manager"
+                                value={jobSearch}
+                                onChange={(e) => setJobSearch(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                                disabled={loading || searching}
+                            />
+                            <button
+                                className="search-btn"
+                                onClick={handleSearch}
+                                disabled={loading || searching}
+                            >
+                                {searching ? '...' : '🔍'}
+                            </button>
+                        </div>
+                        <span className="hint">Search for jobs by title or keyword</span>
                     </div>
+
+                    {searchResults.length > 0 && (
+                        <div className="search-results">
+                            <h4>Select a job ({searchResults.length} results)</h4>
+                            <div className="job-list">
+                                {searchResults.map((result) => (
+                                    <div
+                                        key={result.id}
+                                        className={`job-item ${selectedJobId === result.id ? 'selected' : ''}`}
+                                        onClick={() => handleSelectJob(result.id)}
+                                    >
+                                        <div className="job-item-info">
+                                            <strong>{result.objective}</strong>
+                                            <span className="company">
+                                                {result.organizations[0]?.name || 'Unknown Company'}
+                                            </span>
+                                        </div>
+                                        <div className="job-item-meta">
+                                            {result.remote && <span className="remote-badge">Remote</span>}
+                                            {result.compensation && (
+                                                <span className="salary">
+                                                    ${result.compensation.minAmount?.toLocaleString()}
+                                                    {result.compensation.maxAmount &&
+                                                        ` - $${result.compensation.maxAmount.toLocaleString()}`
+                                                    }
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {selectedJobId && (
+                        <div className="selected-job-badge">
+                            ✅ Job selected: {selectedJobId}
+                        </div>
+                    )}
 
                     <button
                         className="analyze-btn"
                         onClick={handleAnalyze}
-                        disabled={loading}
+                        disabled={loading || !username.trim() || !selectedJobId}
                     >
                         {loading ? 'Analyzing...' : 'Analyze Skill Gap'}
                     </button>
