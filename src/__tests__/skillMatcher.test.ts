@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { compareSkills, MatchResult, getLearningResources } from '../utils/skillMatcher';
-import type { TorreProfile, TorreJob } from '../services/torreApi';
+import { compareSkills, getLearningResources } from '../utils/skillMatcher';
+import type { MatchResult, TorreProfile, TorreJob } from '../types';
 
 // Mock profile data
 const createMockProfile = (skills: Array<{ name: string; proficiency: string; weight?: number }>): TorreProfile => ({
