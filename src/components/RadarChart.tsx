@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useMemo, memo } from 'react';
 import type { SkillMatch } from '../types';
+import { categorizeSkill, DEFAULT_CATEGORIES } from '../utils/skillCategorizer';
 
 interface RadarChartProps {
     matched: SkillMatch[];
@@ -9,84 +10,75 @@ interface RadarChartProps {
     height?: number;
 }
 
-// Simple categorization keyword mapping
-const CATEGORIES = {
-    'Frontend': ['react', 'vue', 'angular', 'html', 'css', 'javascript', 'typescript', 'frontend', 'ui', 'ux', 'webpack', 'vite'],
-    'Backend': ['node', 'python', 'java', 'go', 'golang', 'ruby', 'php', 'sql', 'database', 'mongo', 'postgres', 'api', 'server', 'aws', 'cloud'],
-    'Mobile': ['ios', 'android', 'swift', 'kotlin', 'react native', 'flutter', 'mobile'],
-    'Tools': ['git', 'docker', 'kubernetes', 'jenkins', 'jira', 'agile', 'scrum', 'testing', 'jest', 'cypress'],
-    'Soft Skills': ['communication', 'leadership', 'teamwork', 'english', 'spanish', 'management', 'mentoring'],
-};
-
-export function RadarChart({ matched, partial, missing, width = 300, height = 300 }: RadarChartProps) {
+export const RadarChart = memo(function RadarChart({ matched, partial, missing, width = 300, height = 300 }: RadarChartProps) {
     const cx = width / 2;
     const cy = height / 2;
     const radius = Math.min(width, height) / 2 - 40;
 
-    // Calculate category scores
-    const categoryScores: Record<string, { total: number; obtained: number }> = {
-        'Frontend': { total: 0, obtained: 0 },
-        'Backend': { total: 0, obtained: 0 },
-        'Mobile': { total: 0, obtained: 0 },
-        'Tools': { total: 0, obtained: 0 },
-        'Soft Skills': { total: 0, obtained: 0 },
-        'Other': { total: 0, obtained: 0 },
-    };
+    // Memoize category calculation to avoid recalculating on every render if props don't change
+    const { points, activeCategories, angleStep, polygonPoints } = useMemo(() => {
+        // Calculate category scores
+        const categoryScores: Record<string, { total: number; obtained: number }> = {
+            'Frontend': { total: 0, obtained: 0 },
+            'Backend': { total: 0, obtained: 0 },
+            'Mobile': { total: 0, obtained: 0 },
+            'Tools': { total: 0, obtained: 0 },
+            'Soft Skills': { total: 0, obtained: 0 },
+            'Other': { total: 0, obtained: 0 },
+        };
 
-    const allSkills = [...matched, ...partial, ...missing];
+        const allSkills = [...matched, ...partial, ...missing];
 
-    allSkills.forEach(skill => {
-        const name = skill.name.toLowerCase();
-        let category = 'Other';
+        allSkills.forEach(skill => {
+            const category = categorizeSkill(skill.name);
+            categoryScores[category].total += 1;
 
-        for (const [cat, keywords] of Object.entries(CATEGORIES)) {
-            if (keywords.some(k => name.includes(k))) {
-                category = cat;
-                break;
+            if (skill.status === 'matched') {
+                categoryScores[category].obtained += 1;
+            } else if (skill.status === 'partial') {
+                categoryScores[category].obtained += 0.5;
             }
-        }
-
-        categoryScores[category].total += 1;
-
-        if (skill.status === 'matched') {
-            categoryScores[category].obtained += 1;
-        } else if (skill.status === 'partial') {
-            categoryScores[category].obtained += 0.5;
-        }
-    });
-
-    // Filter categories that have at least one requirement
-    const activeCategories = Object.keys(categoryScores).filter(cat => categoryScores[cat].total > 0 && cat !== 'Other');
-
-    // Use at least the main categories if job is too specific, to keep the shape
-    if (activeCategories.length < 3) {
-        ['Frontend', 'Backend', 'Tools', 'Soft Skills'].forEach(cat => {
-            if (!activeCategories.includes(cat)) activeCategories.push(cat);
         });
-    }
 
-    const totalAxes = activeCategories.length;
-    const angleStep = (Math.PI * 2) / totalAxes;
+        // Filter categories that have at least one requirement
+        const activeCats = Object.keys(categoryScores).filter(cat => categoryScores[cat].total > 0 && cat !== 'Other');
 
-    // Calculate points
-    const points = activeCategories.map((cat, i) => {
-        const score = categoryScores[cat].total > 0
-            ? categoryScores[cat].obtained / categoryScores[cat].total
-            : 0; // Default to 0 if no requirements
+        // Ensure we have enough axes to form a shape
+        if (activeCats.length < 3) {
+            DEFAULT_CATEGORIES.forEach(cat => {
+                if (!activeCats.includes(cat)) activeCats.push(cat);
+            });
+        }
 
-        const angle = i * angleStep - Math.PI / 2; // Start from top
-        const value = score * radius;
+        const step = (Math.PI * 2) / activeCats.length;
 
-        const x = cx + Math.cos(angle) * value;
-        const y = cy + Math.sin(angle) * value;
+        // Calculate points
+        const calculatedPoints = activeCats.map((cat, i) => {
+            const score = categoryScores[cat].total > 0
+                ? categoryScores[cat].obtained / categoryScores[cat].total
+                : 0;
 
-        const labelX = cx + Math.cos(angle) * (radius + 20);
-        const labelY = cy + Math.sin(angle) * (radius + 20);
+            const angle = i * step - Math.PI / 2; // Start from top
+            const value = score * radius;
 
-        return { x, y, labelX, labelY, cat, score };
-    });
+            const x = cx + Math.cos(angle) * value;
+            const y = cy + Math.sin(angle) * value;
 
-    const polygonPoints = points.map(p => `${p.x},${p.y}`).join(' ');
+            const labelX = cx + Math.cos(angle) * (radius + 20);
+            const labelY = cy + Math.sin(angle) * (radius + 20);
+
+            return { x, y, labelX, labelY, cat, score };
+        });
+
+        const polyPoints = calculatedPoints.map(p => `${p.x},${p.y}`).join(' ');
+
+        return {
+            points: calculatedPoints,
+            activeCategories: activeCats,
+            angleStep: step,
+            polygonPoints: polyPoints
+        };
+    }, [matched, partial, missing, cx, cy, radius]);
 
     return (
         <div className="radar-chart-container">
@@ -165,4 +157,4 @@ export function RadarChart({ matched, partial, missing, width = 300, height = 30
             </svg>
         </div>
     );
-}
+});
