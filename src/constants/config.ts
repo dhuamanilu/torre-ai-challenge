@@ -1,10 +1,17 @@
 export const API_CONFIG = {
-    BASE_URL: '/api',
-    SEARCH_URL: '/search-api',
+    BASE_URL: 'https://torre.bio/api', // Original URL for reference
+    PROXY_URL: '/api', // Vite proxy prefix
+    SEARCH_URL: '/search-api', // Vite proxy prefix for search
     DEFAULTS: {
         SEARCH_LIMIT: 10,
         LANGUAGE: 'en',
     },
+};
+
+export const ENDPOINTS = {
+    GET_USER_PROFILE: '/genome/bios',
+    GET_JOB_DETAILS: '/suite/opportunities',
+    SEARCH_JOBS: '/search-api/opportunities/_search',
 };
 
 export const SCORING_CONFIG = {
