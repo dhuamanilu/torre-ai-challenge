@@ -33,6 +33,7 @@ export function JobSearch() {
                         onClick={handleSearch}
                         disabled={loading || searching}
                         aria-label="Search jobs"
+                        data-testid="search-button"
                     >
                         {searching ? '...' : '🔍'}
                     </button>

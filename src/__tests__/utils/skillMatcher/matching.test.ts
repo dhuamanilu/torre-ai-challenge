@@ -1,39 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { compareSkills, getLearningResources } from '../utils/skillMatcher';
-import type { MatchResult, TorreProfile, TorreJob } from '../types';
-
-// Mock profile data
-const createMockProfile = (skills: Array<{ name: string; proficiency: string; weight?: number }>): TorreProfile => ({
-    person: {
-        name: 'Test User',
-        professionalHeadline: 'Software Developer',
-    },
-    strengths: skills.map((skill, index) => ({
-        id: `skill-${index}`,
-        code: index,
-        name: skill.name,
-        proficiency: skill.proficiency,
-        weight: skill.weight || 0,
-    })),
-    stats: {
-        strengths: skills.length,
-    },
-});
-
-// Mock job data
-const createMockJob = (skills: Array<{ name: string; experience?: string }>): TorreJob => ({
-    id: 'test-job',
-    objective: 'Test Job',
-    organizations: [{ name: 'Test Company' }],
-    strengths: skills.map((skill, index) => ({
-        id: `req-${index}`,
-        code: index,
-        name: skill.name,
-        experience: skill.experience,
-    })),
-    remote: true,
-    locations: ['Remote'],
-});
+import { compareSkills } from '../../../utils/skillMatcher';
+import { createMockProfile, createMockJob } from './testUtils';
 
 describe('compareSkills', () => {
     it('should return 100% match when user has all required skills at or above required level', () => {
@@ -173,22 +140,5 @@ describe('compareSkills', () => {
         const result = compareSkills(profile, job);
 
         expect(result.matched[0].weight).toBe(75);
-    });
-});
-
-describe('getLearningResources', () => {
-    it('should return learning resources for a skill', () => {
-        const resources = getLearningResources('JavaScript');
-
-        expect(resources.length).toBeGreaterThan(0);
-        expect(resources.some(r => r.platform === 'Coursera')).toBe(true);
-        expect(resources.some(r => r.platform === 'Udemy')).toBe(true);
-        expect(resources.some(r => r.platform === 'YouTube')).toBe(true);
-    });
-
-    it('should encode skill names in URLs', () => {
-        const resources = getLearningResources('React Native');
-
-        expect(resources[0].url).toContain('React%20Native');
     });
 });
