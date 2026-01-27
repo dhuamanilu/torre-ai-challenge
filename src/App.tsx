@@ -6,6 +6,7 @@ import { JobSearch } from './components/features/JobSearch';
 import { AnalyzeButton } from './components/features/AnalyzeButton';
 import { AnalysisResults } from './components/features/AnalysisResults';
 import { ErrorMessage } from './components/common/ErrorMessage';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 import './App.css';
 
 function App() {
@@ -13,16 +14,18 @@ function App() {
         <div className="app">
             <Header />
 
-            <main className="main">
-                <section className="input-section">
-                    <ProfileInput />
-                    <JobSearch />
-                    <AnalyzeButton />
-                    <ErrorMessage />
-                </section>
+            <ErrorBoundary>
+                <main className="main">
+                    <section className="input-section">
+                        <ProfileInput />
+                        <JobSearch />
+                        <AnalyzeButton />
+                        <ErrorMessage />
+                    </section>
 
-                <AnalysisResults />
-            </main>
+                    <AnalysisResults />
+                </main>
+            </ErrorBoundary>
 
             <Footer />
         </div>

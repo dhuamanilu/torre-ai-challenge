@@ -1,5 +1,6 @@
 import React from 'react';
 import { useApp } from '../../context/AppContext';
+import { ProfileSkeleton } from '../common/Skeleton';
 
 export function ProfileInput() {
     const {
@@ -36,7 +37,9 @@ export function ProfileInput() {
             </div>
             <span className="hint">Enter username and click 👤 to preview your profile</span>
 
-            {profilePreview && (
+            {loadingProfile ? (
+                <ProfileSkeleton />
+            ) : profilePreview && (
                 <div className="profile-summary-card">
                     <div className="profile-summary-header">
                         {profilePreview.person.pictureThumbnail && (

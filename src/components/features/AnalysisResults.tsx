@@ -1,6 +1,7 @@
 import React from 'react';
 import { useApp } from '../../context/AppContext';
 import { RadarChart } from '../RadarChart';
+import { AnalysisSkeleton } from '../common/Skeleton';
 import { getLearningResources } from '../../utils/skillMatcher';
 import type { LearningResource } from '../../types';
 
@@ -10,9 +11,14 @@ export function AnalysisResults() {
         activeComparison,
         setActiveComparison,
         profile,
+        loading,
         showLearning,
         setShowLearning,
     } = useApp();
+
+    if (loading) {
+        return <AnalysisSkeleton />;
+    }
 
     if (comparisons.length === 0 || !profile) {
         return null;
