@@ -7,7 +7,7 @@ import { AnalyzeButton } from './components/features/AnalyzeButton';
 import { AnalysisResults } from './components/features/AnalysisResults';
 import { ErrorMessage } from './components/common/ErrorMessage';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
-import './App.css';
+import './styles/main.css';
 
 function App() {
     return (
