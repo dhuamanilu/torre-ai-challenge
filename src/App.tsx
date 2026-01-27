@@ -1,13 +1,9 @@
 import { useState } from 'react';
-import { fetchUserProfile, fetchJobDetails, searchJobs, TorreProfile, TorreJob, JobSearchResult } from './services/torreApi';
-import { compareSkills, MatchResult, getLearningResources, LearningResource } from './utils/skillMatcher';
+import { fetchUserProfile, fetchJobDetails, searchJobs } from './services/torreApi';
+import { compareSkills, getLearningResources } from './utils/skillMatcher';
 import { RadarChart } from './components/RadarChart';
+import type { TorreProfile, TorreJob, JobSearchResult, MatchResult, LearningResource, JobComparison } from './types';
 import './App.css';
-
-interface JobComparison {
-    job: TorreJob;
-    result: MatchResult;
-}
 
 function App() {
     const [username, setUsername] = useState('');
