@@ -1,5 +1,5 @@
 import React from 'react';
-import { SkillMatch } from '../utils/skillMatcher';
+import type { SkillMatch } from '../types';
 
 interface RadarChartProps {
     matched: SkillMatch[];
