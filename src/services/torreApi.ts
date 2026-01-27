@@ -1,73 +1,9 @@
 // Torre API Service Layer
-// Using relative path to go through Vite proxy (avoids CORS)
-const TORRE_API_BASE = '/api';
-const TORRE_SEARCH_BASE = '/search-api';
-
-export interface TorreProfile {
-    person: {
-        name: string;
-        professionalHeadline?: string;
-        picture?: string;
-        pictureThumbnail?: string;
-    };
-    strengths: Array<{
-        id: string;
-        code: number;
-        name: string;
-        proficiency: string;
-        weight: number;
-    }>;
-    stats: {
-        strengths: number;
-    };
-}
-
-export interface TorreJob {
-    id: string;
-    objective: string;
-    organizations: Array<{
-        name: string;
-        picture?: string;
-    }>;
-    strengths: Array<{
-        id: string;
-        code: number;
-        name: string;
-        experience?: string;
-    }>;
-    compensation?: {
-        currency: string;
-        minAmount?: number;
-        maxAmount?: number;
-        periodicity?: string;
-    };
-    remote: boolean;
-    locations: string[];
-}
-
-export interface JobSearchResult {
-    id: string;
-    objective: string;
-    organizations: Array<{
-        name: string;
-        picture?: string;
-    }>;
-    remote: boolean;
-    compensation?: {
-        currency: string;
-        minAmount?: number;
-        maxAmount?: number;
-    };
-    locations: string[];
-}
-
-export interface JobSearchResponse {
-    results: JobSearchResult[];
-    total: number;
-}
+import { API_CONFIG } from '../constants/config';
+import type { TorreProfile, TorreJob, JobSearchResponse } from '../types';
 
 export async function fetchUserProfile(username: string): Promise<TorreProfile> {
-    const response = await fetch(`${TORRE_API_BASE}/genome/bios/${username}`);
+    const response = await fetch(`${API_CONFIG.BASE_URL}/genome/bios/${username}`);
 
     if (!response.ok) {
         if (response.status === 404) {
@@ -80,7 +16,7 @@ export async function fetchUserProfile(username: string): Promise<TorreProfile> 
 }
 
 export async function fetchJobDetails(jobId: string): Promise<TorreJob> {
-    const response = await fetch(`${TORRE_API_BASE}/suite/opportunities/${jobId}`);
+    const response = await fetch(`${API_CONFIG.BASE_URL}/suite/opportunities/${jobId}`);
 
     if (!response.ok) {
         if (response.status === 404) {
@@ -92,9 +28,9 @@ export async function fetchJobDetails(jobId: string): Promise<TorreJob> {
     return response.json();
 }
 
-export async function searchJobs(keyword: string, limit: number = 10): Promise<JobSearchResponse> {
+export async function searchJobs(keyword: string, limit: number = API_CONFIG.DEFAULTS.SEARCH_LIMIT): Promise<JobSearchResponse> {
     const response = await fetch(
-        `${TORRE_SEARCH_BASE}/opportunities/_search?size=${limit}&lang=en`,
+        `${API_CONFIG.SEARCH_URL}/opportunities/_search?size=${limit}&lang=${API_CONFIG.DEFAULTS.LANGUAGE}`,
         {
             method: 'POST',
             headers: {
