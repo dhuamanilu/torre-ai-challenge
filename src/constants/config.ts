@@ -1,0 +1,45 @@
+export const API_CONFIG = {
+    BASE_URL: '/api',
+    SEARCH_URL: '/search-api',
+    DEFAULTS: {
+        SEARCH_LIMIT: 10,
+        LANGUAGE: 'en',
+    },
+};
+
+export const SCORING_CONFIG = {
+    BONUS_CAP: 0.2, // Max 20% bonus
+    PARTIAL_MATCH_FACTOR: 0.5,
+    WEIGHT_DIVISOR: 100,
+};
+
+export const VISUALIZATION_CONFIG = {
+    RADAR: {
+        WIDTH: 280,
+        HEIGHT: 280,
+        RADIUS_OFFSET: 20,
+        LEVEL_STEP: 20, // 100/5 levels
+        LABEL_OFFSET: 15,
+        DOT_RADIUS: 4,
+    },
+    SCORE_CIRCLE: {
+        RADIUS: 45,
+        CIRCUMFERENCE: 283, // 2 * PI * 45
+    }
+};
+
+export const SKILL_LEVELS = {
+    PROFICIENCY: {
+        'master': 5,
+        'expert': 4,
+        'proficient': 3,
+        'novice': 2,
+        'no-experience-interested': 1,
+    } as Record<string, number>,
+    EXPERIENCE: {
+        '5-plus-years': 5,
+        '3-5-years': 4,
+        '1-3-years': 3,
+        'potential-to-develop': 2,
+    } as Record<string, number>,
+};
