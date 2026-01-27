@@ -1,38 +1,6 @@
 // Skill Matching Algorithm with Weighted Scoring
-import type { TorreProfile, TorreJob } from '../services/torreApi';
-
-export interface SkillMatch {
-    name: string;
-    status: 'matched' | 'partial' | 'missing';
-    userProficiency?: string;
-    requiredExperience?: string;
-    weight?: number;
-    recommendations?: number;
-}
-
-export interface MatchResult {
-    matched: SkillMatch[];
-    partial: SkillMatch[];
-    missing: SkillMatch[];
-    score: number;
-    weightedScore: number;
-    totalRequired: number;
-}
-
-const PROFICIENCY_LEVELS: Record<string, number> = {
-    'master': 5,
-    'expert': 4,
-    'proficient': 3,
-    'novice': 2,
-    'no-experience-interested': 1,
-};
-
-const EXPERIENCE_LEVELS: Record<string, number> = {
-    '5-plus-years': 5,
-    '3-5-years': 4,
-    '1-3-years': 3,
-    'potential-to-develop': 2,
-};
+import type { TorreProfile, TorreJob, MatchResult, SkillMatch, LearningResource } from '../types';
+import { SCORING_CONFIG, SKILL_LEVELS } from '../constants/config';
 
 export function compareSkills(profile: TorreProfile, job: TorreJob): MatchResult {
     const userSkills = new Map<string, { name: string; proficiency: string; weight: number; recommendations?: number }>();
@@ -64,8 +32,8 @@ export function compareSkills(profile: TorreProfile, job: TorreJob): MatchResult
         totalWeight += skillWeight;
 
         if (userSkill) {
-            const userLevel = PROFICIENCY_LEVELS[userSkill.proficiency] || 2;
-            const requiredLevel = EXPERIENCE_LEVELS[required.experience || 'potential-to-develop'] || 2;
+            const userLevel = SKILL_LEVELS.PROFICIENCY[userSkill.proficiency] || 2;
+            const requiredLevel = SKILL_LEVELS.EXPERIENCE[required.experience || 'potential-to-develop'] || 2;
 
             if (userLevel >= requiredLevel) {
                 matched.push({
@@ -77,7 +45,7 @@ export function compareSkills(profile: TorreProfile, job: TorreJob): MatchResult
                     recommendations: userSkill.recommendations,
                 });
                 // Full credit for matched, with bonus for high weight/recommendations
-                const bonus = Math.min(userSkill.weight / 100, 0.2); // Up to 20% bonus
+                const bonus = Math.min(userSkill.weight / SCORING_CONFIG.WEIGHT_DIVISOR, SCORING_CONFIG.BONUS_CAP);
                 matchedWeight += skillWeight * (1 + bonus);
             } else {
                 partial.push({
@@ -88,8 +56,8 @@ export function compareSkills(profile: TorreProfile, job: TorreJob): MatchResult
                     weight: userSkill.weight,
                     recommendations: userSkill.recommendations,
                 });
-                // Partial credit (50%) for having the skill at lower level
-                matchedWeight += skillWeight * 0.5;
+                // Partial credit for having the skill at lower level
+                matchedWeight += skillWeight * SCORING_CONFIG.PARTIAL_MATCH_FACTOR;
             }
         } else {
             missing.push({
@@ -103,7 +71,7 @@ export function compareSkills(profile: TorreProfile, job: TorreJob): MatchResult
     const totalRequired = job.strengths.length || 1;
 
     // Simple score (original formula)
-    const simpleScore = Math.round(((matched.length + partial.length * 0.5) / totalRequired) * 100);
+    const simpleScore = Math.round(((matched.length + partial.length * SCORING_CONFIG.PARTIAL_MATCH_FACTOR) / totalRequired) * 100);
 
     // Weighted score (considers user's skill strength)
     const weightedScore = totalWeight > 0
@@ -121,13 +89,6 @@ export function compareSkills(profile: TorreProfile, job: TorreJob): MatchResult
 }
 
 // Learning resources API - using free public APIs
-export interface LearningResource {
-    name: string;
-    url: string;
-    platform: string;
-    type: 'course' | 'documentation' | 'tutorial';
-}
-
 export function getLearningResources(skillName: string): LearningResource[] {
     const encodedSkill = encodeURIComponent(skillName);
 
