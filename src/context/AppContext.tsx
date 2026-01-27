@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import type { TorreProfile, JobSearchResult, JobComparison } from '../types';
-import { fetchUserProfile, fetchJobDetails, searchJobs } from '../services/torreApi';
-import { compareSkills } from '../utils/skillMatcher';
+import { useTorreProfile } from '../hooks/useTorreProfile';
+import { useJobSearch } from '../hooks/useJobSearch';
+import { useSkillAnalysis } from '../hooks/useSkillAnalysis';
 
 interface AppState {
     // Profile state
@@ -26,141 +27,102 @@ interface AppState {
     showLearning: string | null;
 }
 
-interface AppContextType extends AppState {
+interface AppContextType {
+    // Profile
+    username: string;
     setUsername: (value: string) => void;
-    setJobSearch: (value: string) => void;
-    setActiveComparison: (index: number) => void;
-    setShowLearning: (skillName: string | null) => void;
+    profile: TorreProfile | null;
+    profilePreview: TorreProfile | null;
+    loadingProfile: boolean;
     loadProfile: () => Promise<void>;
+
+    // Job Search
+    jobSearch: string;
+    setJobSearch: (value: string) => void;
+    searchResults: JobSearchResult[];
+    selectedJobs: JobSearchResult[];
+    searching: boolean;
     handleSearch: () => Promise<void>;
     selectJob: (job: JobSearchResult) => void;
+
+    // Analysis
+    comparisons: JobComparison[];
+    activeComparison: number;
+    setActiveComparison: (index: number) => void;
+    loading: boolean;
     analyze: () => Promise<void>;
+
+    // UI
+    error: string;
     clearError: () => void;
+    showLearning: string | null;
+    setShowLearning: (skillName: string | null) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
-    const [username, setUsername] = useState('');
-    const [jobSearch, setJobSearch] = useState('');
-    const [selectedJobs, setSelectedJobs] = useState<JobSearchResult[]>([]);
-    const [searchResults, setSearchResults] = useState<JobSearchResult[]>([]);
-    const [profile, setProfile] = useState<TorreProfile | null>(null);
-    const [profilePreview, setProfilePreview] = useState<TorreProfile | null>(null);
-    const [loadingProfile, setLoadingProfile] = useState(false);
-    const [comparisons, setComparisons] = useState<JobComparison[]>([]);
-    const [activeComparison, setActiveComparison] = useState(0);
-    const [loading, setLoading] = useState(false);
-    const [searching, setSearching] = useState(false);
-    const [error, setError] = useState('');
+    // UI Local State
     const [showLearning, setShowLearning] = useState<string | null>(null);
+    const [globalError, setGlobalError] = useState('');
 
-    const clearError = useCallback(() => setError(''), []);
+    // Custom Hooks
+    const profileHook = useTorreProfile();
+    const jobSearchHook = useJobSearch();
+    const analysisHook = useSkillAnalysis();
 
-    const loadProfile = useCallback(async () => {
-        if (!username.trim()) {
-            setError('Please enter your Torre username');
-            return;
-        }
-        setLoadingProfile(true);
-        setError('');
-        try {
-            const profileData = await fetchUserProfile(username.trim());
-            setProfilePreview(profileData);
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to load profile');
-        } finally {
-            setLoadingProfile(false);
-        }
-    }, [username]);
+    // Sync errors
+    useEffect(() => {
+        if (profileHook.profileError) setGlobalError(profileHook.profileError);
+        else if (jobSearchHook.jobError) setGlobalError(jobSearchHook.jobError);
+        else if (analysisHook.analysisError) setGlobalError(analysisHook.analysisError);
+        else setGlobalError('');
+    }, [profileHook.profileError, jobSearchHook.jobError, analysisHook.analysisError]);
 
-    const handleSearch = useCallback(async () => {
-        if (!jobSearch.trim()) {
-            setError('Please enter a job search term');
-            return;
-        }
-        setSearching(true);
-        setError('');
-        setSearchResults([]);
-        try {
-            const results = await searchJobs(jobSearch.trim());
-            setSearchResults(results.results);
-            if (results.results.length === 0) {
-                setError('No jobs found. Try a different search term.');
-            }
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to search jobs');
-        } finally {
-            setSearching(false);
-        }
-    }, [jobSearch]);
+    const clearError = () => {
+        setGlobalError('');
+        profileHook.setProfileError(null);
+        jobSearchHook.setJobError(null);
+        analysisHook.setAnalysisError(null);
+    };
 
-    const selectJob = useCallback((job: JobSearchResult) => {
-        setSelectedJobs(prev => {
-            if (prev.some(j => j.id === job.id)) {
-                return prev.filter(j => j.id !== job.id);
-            }
-            if (prev.length < 3) {
-                return [...prev, job];
-            }
-            return prev;
-        });
-    }, []);
-
-    const analyze = useCallback(async () => {
-        if (!username.trim()) {
-            setError('Please enter your Torre username');
-            return;
+    const handleAnalyze = async () => {
+        const freshProfile = await analysisHook.analyze(profileHook.username, jobSearchHook.selectedJobs);
+        if (freshProfile) {
+            profileHook.setProfile(freshProfile);
         }
-        if (selectedJobs.length === 0) {
-            setError('Please select at least one job');
-            return;
-        }
-        setLoading(true);
-        setError('');
-        setComparisons([]);
-        try {
-            const profileData = await fetchUserProfile(username.trim());
-            setProfile(profileData);
-            const jobPromises = selectedJobs.map(j => fetchJobDetails(j.id));
-            const jobs = await Promise.all(jobPromises);
-            const newComparisons: JobComparison[] = jobs.map(job => ({
-                job,
-                result: compareSkills(profileData, job),
-            }));
-            newComparisons.sort((a, b) => b.result.weightedScore - a.result.weightedScore);
-            setComparisons(newComparisons);
-            setActiveComparison(0);
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'An error occurred');
-        } finally {
-            setLoading(false);
-        }
-    }, [username, selectedJobs]);
+    };
 
     const value: AppContextType = {
-        username,
-        profile,
-        profilePreview,
-        loadingProfile,
-        jobSearch,
-        searchResults,
-        selectedJobs,
-        searching,
-        comparisons,
-        activeComparison,
-        loading,
-        error,
-        showLearning,
-        setUsername,
-        setJobSearch,
-        setActiveComparison,
-        setShowLearning,
-        loadProfile,
-        handleSearch,
-        selectJob,
-        analyze,
+        // Profile
+        username: profileHook.username,
+        setUsername: profileHook.setUsername,
+        profile: profileHook.profile,
+        profilePreview: profileHook.profilePreview,
+        loadingProfile: profileHook.loadingProfile,
+        loadProfile: profileHook.loadProfile,
+
+        // Job Search
+        jobSearch: jobSearchHook.jobSearch,
+        setJobSearch: jobSearchHook.setJobSearch,
+        searchResults: jobSearchHook.searchResults,
+        selectedJobs: jobSearchHook.selectedJobs,
+        searching: jobSearchHook.searching,
+        handleSearch: jobSearchHook.handleSearch,
+        selectJob: jobSearchHook.selectJob,
+
+        // Analysis
+        comparisons: analysisHook.comparisons,
+        activeComparison: analysisHook.activeComparison,
+        setActiveComparison: analysisHook.setActiveComparison,
+        loading: analysisHook.loading,
+        analyze: handleAnalyze,
+
+        // UI
+        error: globalError,
         clearError,
+        showLearning,
+        setShowLearning,
     };
 
     return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
