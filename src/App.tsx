@@ -38,6 +38,7 @@ function App() {
                         <JobSearchScreen
                             key="search"
                             onSearch={() => setView('results')}
+                            onBack={() => setView('profile')}
                         />
                     )}
 

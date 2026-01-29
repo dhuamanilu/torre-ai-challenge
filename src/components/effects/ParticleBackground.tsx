@@ -1,9 +1,24 @@
-import React, { useRef } from 'react';
-import { useParticleSystem } from '../../hooks/visuals/useParticleSystem';
+import React, { useRef, useMemo } from 'react';
+import { useParticleCanvas } from '../../hooks/visuals/useParticleCanvas';
 
-export function ParticleBackground() {
+export const ParticleBackground = React.memo(() => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    useParticleSystem(canvasRef as React.RefObject<HTMLCanvasElement>);
+
+    const options = useMemo(() => ({
+        particleCount: 2000,      // More particles for density
+        repulsionRadius: 180,     // Larger radius for "slow" effect to start earlier
+        repulsionStrength: 15,    // Weaker kick for "heavier" feel
+        springStrength: 0.005,    // VERY slow return (was 0.02)
+        friction: 0.96,           // High friction for "floaty" feel (slide)
+        colors: [
+            '#6366f1', // Indigo
+            '#8b5cf6', // Violet
+            '#a855f7', // Purple
+            '#4f46e5'  // Deep Blue
+        ]
+    }), []);
+
+    useParticleCanvas(canvasRef as React.RefObject<HTMLCanvasElement>, options);
 
     return (
         <canvas
@@ -14,10 +29,11 @@ export function ParticleBackground() {
                 left: 0,
                 width: '100%',
                 height: '100%',
-                zIndex: 0, // Behind refined-content but visible
-                pointerEvents: 'none', // Allow clicks pass through
-                background: 'transparent'
+                zIndex: 0,
+                pointerEvents: 'none',
+                background: 'transparent',
+                cursor: 'default' // Explicitly default (though pointerEvents: none might bypass this, the parent needs it)
             }}
         />
     );
-}
+});
