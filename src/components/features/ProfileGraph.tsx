@@ -17,22 +17,36 @@ export function ProfileGraph({ onNext, onBack }: { onNext: () => void, onBack: (
         'Backend': '#3b82f6',  // Blue
         'Mobile': '#8b5cf6',   // Violet
         'Tools': '#64748b',    // Slate
+        'Soft Skills': '#10b981', // Emerald
         'General': '#f8fafc',  // White/Silver
         'Other': '#475569'     // Dark Slate
     };
 
     const graphData = useMemo(() => {
-        if (!profile) return { nodes: [], links: [] };
+        if (!profile || !Array.isArray(profile.strengths)) return { nodes: [], links: [] };
 
         const nodes: any[] = [];
         const links: any[] = [];
         const activeCategories = new Set<string>();
 
-        // 1. Process Skills first to identify active categories
+        // 1. Process Skills (Deduplicate & Sanitize)
         const skillNodes: any[] = [];
         const skillLinks: any[] = [];
+        const processedIds = new Set<string>();
 
-        profile.strengths.slice(0, 50).forEach(skill => {
+        // Limit to 60 to prevent slow rendering on chaos
+        const safeStrengths = profile.strengths.filter(s => s.name && s.id);
+
+        safeStrengths.slice(0, 60).forEach(skill => {
+            // Prevent duplicates
+            if (processedIds.has(skill.id)) return;
+            processedIds.add(skill.id);
+
+            // Avoid ID conflicts with reserved keywords
+            if (['root', 'Frontend', 'Backend', 'Mobile', 'Tools', 'Soft Skills', 'Other'].includes(skill.id)) {
+                return;
+            }
+
             let parent = 'Other';
             const sName = skill.name.toLowerCase();
 
@@ -44,14 +58,12 @@ export function ProfileGraph({ onNext, onBack }: { onNext: () => void, onBack: (
                 }
             }
 
-            // Only map if category exists in our filtered list (or matches Other)
-            // But we want to find *which* categories have skills.
             activeCategories.add(parent);
 
             skillNodes.push({
                 id: skill.id,
                 name: skill.name,
-                val: skill.proficiency === 'master' ? 6 : 3,
+                val: (skill.proficiency === 'master' || skill.proficiency === 'expert') ? 6 : 3,
                 color: CATEGORY_COLORS[parent] || '#64748b',
                 type: 'skill',
                 parent: parent
@@ -74,7 +86,7 @@ export function ProfileGraph({ onNext, onBack }: { onNext: () => void, onBack: (
                 id: cat,
                 name: cat,
                 val: 8,
-                color: CATEGORY_COLORS[cat] || '#888',
+                color: CATEGORY_COLORS[cat] || '#888888', // Fixed: 6-digit hex fallback
                 type: 'category'
             });
             links.push({ source: 'root', target: cat });
@@ -164,17 +176,36 @@ export function ProfileGraph({ onNext, onBack }: { onNext: () => void, onBack: (
         ctx.save();
 
         // Star / Planet Glow Effect
+        // Star / Planet Glow Effect
         const glowRadius = r * (isHovered || node.type === 'category' ? 4 : 2);
-        const gradient = ctx.createRadialGradient(x, y, r * 0.5, x, y, glowRadius);
 
-        gradient.addColorStop(0, node.color); // Core
-        gradient.addColorStop(0.4, `${node.color}40`); // Mid glow
-        gradient.addColorStop(1, 'transparent'); // Fade out
+        try {
+            const gradient = ctx.createRadialGradient(x, y, r * 0.5, x, y, glowRadius);
 
-        ctx.beginPath();
-        ctx.arc(x, y, glowRadius, 0, 2 * Math.PI, false);
-        ctx.fillStyle = gradient;
-        ctx.fill();
+            // Safe hex alpha appending
+            let transparentColor = node.color;
+            if (node.color.startsWith('#') && node.color.length === 7) {
+                transparentColor = `${node.color}40`; // Valid 8-digit hex
+            } else {
+                // Fallback for short hex or named colors
+                transparentColor = 'rgba(255,255,255,0.2)';
+            }
+
+            gradient.addColorStop(0, node.color); // Core
+            gradient.addColorStop(0.4, transparentColor); // Mid glow
+            gradient.addColorStop(1, 'transparent'); // Fade out
+
+            ctx.beginPath();
+            ctx.arc(x, y, glowRadius, 0, 2 * Math.PI, false);
+            ctx.fillStyle = gradient;
+            ctx.fill();
+        } catch (e) {
+            // Fallback
+            ctx.beginPath();
+            ctx.arc(x, y, glowRadius, 0, 2 * Math.PI, false);
+            ctx.fillStyle = 'rgba(255,255,255,0.1)';
+            ctx.fill();
+        }
 
         // Solid Core (smaller)
         ctx.beginPath();
