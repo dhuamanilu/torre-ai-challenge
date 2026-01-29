@@ -37,10 +37,8 @@ export function useJobSearch() {
             if (prev.some(j => j.id === job.id)) {
                 return prev.filter(j => j.id !== job.id);
             }
-            if (prev.length < 3) {
-                return [...prev, job];
-            }
-            return prev;
+            // Limit removed per user request (was < 3)
+            return [...prev, job];
         });
     }, []);
 

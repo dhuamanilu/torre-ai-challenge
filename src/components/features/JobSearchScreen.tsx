@@ -1,12 +1,29 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useApp } from '../../context/AppContext';
 
-export function JobSearchScreen({ onSearch }: { onSearch: () => void }) {
+export function JobSearchScreen({ onSearch, onBack }: { onSearch: () => void, onBack: () => void }) {
     const [query, setQuery] = useState('');
     const [hasSearched, setHasSearched] = useState(false);
-    const { setJobSearch, handleSearch, searchResults, selectJob, selectedJobs, loading, analyze } = useApp();
+    const { username, setJobSearch, handleSearch, searchResults, selectJob, selectedJobs, loading, analyze } = useApp();
     const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+    // Auto-search disabled per user request. No pre-filling.
+    useEffect(() => {
+        // Clean state if needed
+    }, []);
+
+    // Scroll-up to go back navigation
+    useEffect(() => {
+        const handleWheel = (e: WheelEvent) => {
+            // If at the top and scrolling up
+            if (window.scrollY === 0 && e.deltaY < -50) {
+                onBack();
+            }
+        };
+        window.addEventListener('wheel', handleWheel);
+        return () => window.removeEventListener('wheel', handleWheel);
+    }, [onBack]);
 
     const doSearch = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -174,6 +191,14 @@ export function JobSearchScreen({ onSearch }: { onSearch: () => void }) {
                         </motion.div>
                     )}
                 </AnimatePresence>
+                {hasSearched && searchResults.length === 0 && !loading && (
+                    <div style={{ marginTop: '2rem', color: 'var(--text-secondary)' }}>No matching jobs found. Try "bestfor:{username}" or a specific role.</div>
+                )}
+            </div>
+            <div style={{ position: 'absolute', top: '2rem', left: '2rem' }}>
+                <button onClick={onBack} className="nav-btn" style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', fontSize: '1.2rem', fontWeight: 'bold' }}>
+                    ← NEW SEARCH
+                </button>
             </div>
         </motion.div>
     );
