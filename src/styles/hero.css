@@ -1,0 +1,73 @@
+/* Hero Section */
+.hero-section {
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+    padding: 2rem;
+}
+
+.hero-content {
+    text-align: center;
+    z-index: 1;
+}
+
+.hero-title-wrapper {
+    overflow: hidden;
+    /* Masking effect for text reveal */
+    line-height: 0.85;
+}
+
+.hero-title {
+    font-size: 10vw;
+    /* Responsive giant text */
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: -0.05em;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.hero-title.highlight {
+    color: transparent;
+    -webkit-text-stroke: 2px var(--accent);
+    /* Outline style */
+    position: relative;
+}
+
+.hero-title.highlight::before {
+    content: 'ANALYZER';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 0%;
+    height: 100%;
+    color: var(--accent);
+    overflow: hidden;
+    transition: width 1s ease-in-out;
+    border-right: 2px solid var(--accent);
+    animation: fillText 2s 1.5s forwards;
+}
+
+@keyframes fillText {
+    to {
+        width: 100%;
+        border-right: none;
+    }
+}
+
+.hero-subtitle {
+    margin-top: 3rem;
+    font-size: 1.5rem;
+    color: var(--text-secondary);
+    font-weight: 300;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Enhancements for Layout CSS */
+/* We will append this to the layout.css later or keep it separate. */
+/* For modularity, let's keep it in layout.css context. */
