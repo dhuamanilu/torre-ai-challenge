@@ -42,7 +42,7 @@ interface AppContextType {
     searchResults: JobSearchResult[];
     selectedJobs: JobSearchResult[];
     searching: boolean;
-    handleSearch: () => Promise<void>;
+    handleSearch: (queryOverride?: string) => Promise<void>;
     selectJob: (job: JobSearchResult) => void;
     clearSelectedJobs: () => void;
 

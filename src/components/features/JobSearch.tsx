@@ -30,7 +30,7 @@ export function JobSearch() {
                     />
                     <button
                         className="search-btn"
-                        onClick={handleSearch}
+                        onClick={() => handleSearch()}
                         disabled={loading || searching}
                         aria-label="Search jobs"
                         data-testid="search-button"
