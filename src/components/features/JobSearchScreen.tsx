@@ -30,7 +30,7 @@ export function JobSearchScreen({ onSearch, onBack }: { onSearch: () => void, on
         if (!query.trim()) return;
 
         setJobSearch(query);
-        await handleSearch();
+        await handleSearch(query); // Pass query directly to fix double-enter bug
         setHasSearched(true);
     };
 
@@ -121,35 +121,47 @@ export function JobSearchScreen({ onSearch, onBack }: { onSearch: () => void, on
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            style={{ marginTop: '2rem', textAlign: 'left' }}
+                            style={{
+                                marginTop: '1rem',
+                                textAlign: 'left',
+                                // Listbox Style Container
+                                background: 'rgba(255,255,255,0.03)',
+                                border: '1px solid rgba(255,255,255,0.1)',
+                                borderRadius: '16px',
+                                padding: '1rem',
+                                maxHeight: '60vh',
+                                overflowY: 'auto'
+                            }}
                         >
-                            <div className="results-grid" style={{ display: 'grid', gap: '1rem', gridTemplateColumns: '1fr' }}>
+                            <div className="results-grid" style={{ display: 'grid', gap: '0.5rem', gridTemplateColumns: '1fr' }}>
                                 {searchResults.map((job) => {
                                     const isSelected = selectedJobs.some(j => j.id === job.id);
                                     return (
                                         <motion.div
                                             key={job.id}
                                             onClick={() => selectJob(job)}
-                                            whileHover={{ scale: 1.02 }}
-                                            whileTap={{ scale: 0.98 }}
+                                            whileHover={{ scale: 1.01, backgroundColor: 'rgba(255,255,255,0.08)' }}
+                                            whileTap={{ scale: 0.99 }}
                                             style={{
-                                                background: isSelected ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255,255,255,0.05)',
-                                                border: isSelected ? '1px solid var(--accent)' : '1px solid rgba(255,255,255,0.1)',
-                                                padding: '1.5rem',
-                                                borderRadius: '12px',
+                                                background: isSelected ? 'rgba(99, 102, 241, 0.25)' : 'transparent',
+                                                border: isSelected ? '1px solid var(--accent)' : '1px solid transparent',
+                                                borderBottom: '1px solid rgba(255,255,255,0.05)',
+                                                padding: '1.2rem',
+                                                borderRadius: '8px',
                                                 cursor: 'pointer',
                                                 display: 'flex',
                                                 justifyContent: 'space-between',
-                                                alignItems: 'center'
+                                                alignItems: 'center',
+                                                transition: 'background 0.2s, border 0.2s'
                                             }}
                                         >
-                                            <div>
-                                                <h3 style={{ margin: 0, fontSize: '1.2rem' }}>{job.objective}</h3>
-                                                <p style={{ margin: '0.5rem 0 0', color: 'var(--text-secondary)' }}>
+                                            <div style={{ width: '100%' }}>
+                                                <h3 style={{ margin: 0, fontSize: '1.1rem', color: isSelected ? 'white' : 'rgba(255,255,255,0.9)' }}>{job.objective}</h3>
+                                                <p style={{ margin: '0.4rem 0 0', color: isSelected ? 'rgba(255,255,255,0.8)' : 'var(--text-secondary)', fontSize: '0.9rem' }}>
                                                     {job.organizations[0]?.name} • {job.remote ? 'Remote' : job.locations[0]}
                                                 </p>
                                             </div>
-                                            {isSelected && <span style={{ fontSize: '1.5rem' }}>✅</span>}
+                                            {/* Removed Checkmark Emoji */}
                                         </motion.div>
                                     );
                                 })}
@@ -192,7 +204,7 @@ export function JobSearchScreen({ onSearch, onBack }: { onSearch: () => void, on
                     )}
                 </AnimatePresence>
                 {hasSearched && searchResults.length === 0 && !loading && (
-                    <div style={{ marginTop: '2rem', color: 'var(--text-secondary)' }}>No matching jobs found. Try "bestfor:{username}" or a specific role.</div>
+                    <div style={{ marginTop: '2rem', color: 'var(--text-secondary)' }}>No jobs found. Try searching for specific roles like "Senior Developer" or "Project Manager".</div>
                 )}
             </div>
             <div style={{ position: 'absolute', top: '2rem', left: '2rem' }}>

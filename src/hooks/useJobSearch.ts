@@ -9,8 +9,10 @@ export function useJobSearch() {
     const [searching, setSearching] = useState(false);
     const [error, setJobError] = useState<string | null>(null);
 
-    const handleSearch = useCallback(async () => {
-        if (!jobSearch.trim()) {
+    const handleSearch = useCallback(async (queryOverride?: string) => {
+        const queryToUse = queryOverride !== undefined ? queryOverride : jobSearch;
+
+        if (!queryToUse.trim()) {
             setJobError('Please enter a job search term');
             return;
         }
@@ -20,7 +22,7 @@ export function useJobSearch() {
         setSearchResults([]);
 
         try {
-            const results = await searchJobs(jobSearch.trim());
+            const results = await searchJobs(queryToUse.trim());
             setSearchResults(results.results);
             if (results.results.length === 0) {
                 setJobError('No jobs found. Try a different search term.');

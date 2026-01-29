@@ -13,7 +13,7 @@ interface RadarChartProps {
 export const RadarChart = memo(function RadarChart({ matched, partial, missing, width = 300, height = 300 }: RadarChartProps) {
     const cx = width / 2;
     const cy = height / 2;
-    const radius = Math.min(width, height) / 2 - 40;
+    const radius = Math.min(width, height) / 2 - 55; // Increased padding from 40 to 55 to prevent label clipping
 
     // Memoize category calculation to avoid recalculating on every render if props don't change
     const { points, activeCategories, angleStep, polygonPoints } = useMemo(() => {
