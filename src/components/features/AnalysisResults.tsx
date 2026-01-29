@@ -37,7 +37,6 @@ export function AnalysisResults() {
                             onClick={() => setActiveComparison(idx)}
                             role="tab"
                             aria-selected={idx === activeComparison}
-                            aria-controls={`panel-${idx}`}
                         >
                             <span className="tab-score">{comp.result.weightedScore}%</span>
                             <span className="tab-title">{comp.job.objective}</span>
@@ -47,158 +46,91 @@ export function AnalysisResults() {
             )}
 
             {currentComp && (
-                <div role="tabpanel" id={`panel-${activeComparison}`}>
-                    <div className="comparison-header">
-                        <div className="profile-card">
-                            {profile.person.pictureThumbnail && (
-                                <img
-                                    src={profile.person.pictureThumbnail}
-                                    alt={profile.person.name}
-                                    className="profile-image"
-                                />
-                            )}
-                            <div className="profile-info">
-                                <h3>{profile.person.name}</h3>
-                                <p>{profile.person.professionalHeadline}</p>
-                            </div>
-                        </div>
-
-                        <div className="score-container">
-                            <div className="score-circle" key={`${currentComp.job.id}-${activeComparison}`}>
-                                <svg viewBox="0 0 100 100" aria-hidden="true">
-                                    <circle className="score-bg" cx="50" cy="50" r="45" />
-                                    <circle
-                                        className="score-progress"
-                                        cx="50"
-                                        cy="50"
-                                        r="45"
-                                        style={{
-                                            strokeDasharray: `${currentComp.result.weightedScore * 2.83} 283`,
-                                        }}
-                                    />
-                                </svg>
-                                <div className="score-text">
-                                    <span className="score-value">{currentComp.result.weightedScore}%</span>
-                                    <span className="score-label">Weighted</span>
-                                </div>
-                            </div>
-                            <div className="score-simple">
-                                Simple: {currentComp.result.score}%
-                            </div>
-                        </div>
-
-                        <div className="radar-chart-wrapper">
-                            <RadarChart
-                                matched={currentComp.result.matched}
-                                partial={currentComp.result.partial}
-                                missing={currentComp.result.missing}
-                                width={280}
-                                height={280}
-                            />
-                        </div>
-
-                        <div className="job-card">
-                            {currentComp.job.organizations[0]?.picture && (
-                                <img
-                                    src={currentComp.job.organizations[0].picture}
-                                    alt={currentComp.job.organizations[0].name}
-                                    className="job-image"
-                                />
-                            )}
-                            <div className="job-info">
-                                <h3>{currentComp.job.objective}</h3>
-                                <p>{currentComp.job.organizations[0]?.name || 'Unknown Company'}</p>
-                            </div>
+                <div className="bento-grid">
+                    {/* Profile Card - R1 C1 */}
+                    <div className="bento-card bento-profile">
+                        <div className="profile-info-compact">
+                            <h3>{profile.person.name}</h3>
+                            <p className="subtitle-text">{profile.person.professionalHeadline}</p>
                         </div>
                     </div>
 
-                    <div className="skills-breakdown">
-                        <div className="skill-category matched">
-                            <h4>✅ Skills You Have ({currentComp.result.matched.length})</h4>
-                            <div className="skill-list">
-                                {currentComp.result.matched.length === 0 ? (
-                                    <p className="empty-message">No matched skills found</p>
-                                ) : (
-                                    currentComp.result.matched.map((skill) => (
-                                        <div key={skill.name} className="skill-tag">
-                                            <span className="skill-name">{skill.name}</span>
-                                            <span className="proficiency">{skill.userProficiency}</span>
-                                            {skill.weight && skill.weight > 0 && (
-                                                <span className="weight-badge" title="Skill strength">
-                                                    ⭐ {Math.round(skill.weight)}
-                                                </span>
-                                            )}
-                                        </div>
-                                    ))
-                                )}
-                            </div>
+                    {/* Score Card - R1 C2 */}
+                    <div className="bento-card bento-score">
+                        <div className="score-value-large" style={{ color: 'var(--accent)', fontSize: '2.5rem', fontWeight: 800 }}>
+                            {currentComp.result.weightedScore}%
                         </div>
+                        <div className="score-label">Match Score</div>
+                    </div>
 
-                        <div className="skill-category partial">
-                            <h4>⚠️ Skills to Improve ({currentComp.result.partial.length})</h4>
-                            <div className="skill-list">
-                                {currentComp.result.partial.length === 0 ? (
-                                    <p className="empty-message">No partial matches</p>
-                                ) : (
-                                    currentComp.result.partial.map((skill) => (
-                                        <div key={skill.name} className="skill-tag">
-                                            <span className="skill-name">{skill.name}</span>
-                                            <span className="proficiency">
-                                                {skill.userProficiency} → {skill.requiredExperience}
-                                            </span>
-                                        </div>
-                                    ))
-                                )}
-                            </div>
+                    {/* Radar Chart - R1-R2 C3-C4 */}
+                    <div className="bento-card bento-chart">
+                        <RadarChart
+                            matched={currentComp.result.matched}
+                            partial={currentComp.result.partial}
+                            missing={currentComp.result.missing}
+                            width={320}
+                            height={320}
+                        />
+                    </div>
+
+                    {/* Job Card - R2 C1-C2 */}
+                    <div className="bento-card bento-job" style={{ gridColumn: 'span 2' }}>
+                        <h3>Target Role</h3>
+                        <div className="job-details-compact">
+                            <strong style={{ fontSize: '1.2rem', display: 'block' }}>{currentComp.job.objective}</strong>
+                            <span style={{ color: 'var(--text-secondary)' }}>{currentComp.job.organizations[0]?.name}</span>
                         </div>
+                    </div>
 
-                        <div className="skill-category missing">
-                            <h4>❌ Skills to Learn ({currentComp.result.missing.length})</h4>
-                            <div className="skill-list">
-                                {currentComp.result.missing.length === 0 ? (
-                                    <p className="empty-message">No missing skills - great match!</p>
-                                ) : (
-                                    currentComp.result.missing.map((skill) => (
-                                        <div
-                                            key={skill.name}
-                                            className="skill-tag clickable"
-                                            onClick={() => setShowLearning(showLearning === skill.name ? null : skill.name)}
-                                            role="button"
-                                            tabIndex={0}
-                                            onKeyDown={(e) => e.key === 'Enter' && setShowLearning(showLearning === skill.name ? null : skill.name)}
-                                            aria-expanded={showLearning === skill.name}
+                    {/* Skills - R3 Full Width */}
+                    <div className="bento-card bento-skills">
+                        <div className="skills-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '2rem' }}>
+                            <div className="skill-column">
+                                <h4 style={{ color: 'var(--success)' }}>✅ Acquired</h4>
+                                <div className="skill-list">
+                                    {currentComp.result.matched.map(s => (
+                                        <span key={s.name} className="skill-tag matched">{s.name}</span>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="skill-column">
+                                <h4 style={{ color: 'var(--warning)' }}>⚠️ Gap</h4>
+                                <div className="skill-list">
+                                    {currentComp.result.partial.map(s => (
+                                        <span key={s.name} className="skill-tag partial">{s.name}</span>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="skill-column">
+                                <h4 style={{ color: 'var(--error)' }}>❌ Missing</h4>
+                                <div className="skill-list">
+                                    {currentComp.result.missing.map(s => (
+                                        <span
+                                            key={s.name}
+                                            className="skill-tag missing clickable"
+                                            onClick={() => setShowLearning(showLearning === s.name ? null : s.name)}
                                         >
-                                            <span className="skill-name">{skill.name}</span>
-                                            {skill.requiredExperience && (
-                                                <span className="proficiency">requires {skill.requiredExperience}</span>
-                                            )}
-                                            <span className="learn-btn">📚 Learn</span>
-
-                                            {showLearning === skill.name && (
-                                                <div className="learning-resources">
-                                                    {getLearningResources(skill.name).map((resource: LearningResource) => (
-                                                        <a
-                                                            key={resource.platform}
-                                                            href={resource.url}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="resource-link"
-                                                            onClick={(e) => e.stopPropagation()}
-                                                        >
-                                                            {resource.platform === 'Coursera' && '🎓'}
-                                                            {resource.platform === 'Udemy' && '📺'}
-                                                            {resource.platform === 'YouTube' && '▶️'}
-                                                            {resource.platform === 'Google' && '📖'}
-                                                            {' '}{resource.platform}
-                                                        </a>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
-                                    ))
-                                )}
+                                            {s.name} 🔗
+                                        </span>
+                                    ))}
+                                </div>
                             </div>
                         </div>
+
+                        {/* Learning Resources Overlay/Expand */}
+                        {showLearning && (
+                            <div className="learning-panel" style={{ marginTop: '1.5rem', padding: '1rem', background: 'rgba(0,0,0,0.2)', borderRadius: '12px' }}>
+                                <h5>Learning: {showLearning}</h5>
+                                <div className="learning-resources">
+                                    {getLearningResources(showLearning).map(r => (
+                                        <a key={r.platform} href={r.url} target="_blank" className="resource-link">{r.platform}</a>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
