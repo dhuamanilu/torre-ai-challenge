@@ -28,7 +28,7 @@ export function ProfileInput() {
                 />
                 <button
                     className="search-btn"
-                    onClick={loadProfile}
+                    onClick={() => loadProfile()}
                     disabled={loading || loadingProfile || !username.trim()}
                     aria-label="Load profile"
                 >

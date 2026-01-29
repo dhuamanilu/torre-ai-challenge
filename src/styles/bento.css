@@ -8,9 +8,10 @@
 }
 
 .bento-card {
-    background: rgba(26, 26, 37, 0.7);
+    background: rgba(15, 15, 25, 0.85);
+    /* Deep space glass */
     /* Glass-like opacity */
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 24px;
     padding: 2rem;
