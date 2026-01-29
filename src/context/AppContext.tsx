@@ -44,6 +44,7 @@ interface AppContextType {
     searching: boolean;
     handleSearch: () => Promise<void>;
     selectJob: (job: JobSearchResult) => void;
+    clearSelectedJobs: () => void;
 
     // Analysis
     comparisons: JobComparison[];
@@ -110,6 +111,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         searching: jobSearchHook.searching,
         handleSearch: jobSearchHook.handleSearch,
         selectJob: jobSearchHook.selectJob,
+        clearSelectedJobs: jobSearchHook.clearSelectedJobs,
 
         // Analysis
         comparisons: analysisHook.comparisons,

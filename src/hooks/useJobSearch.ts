@@ -44,6 +44,10 @@ export function useJobSearch() {
         });
     }, []);
 
+    const clearSelectedJobs = useCallback(() => {
+        setSelectedJobs([]);
+    }, []);
+
     return {
         jobSearch,
         setJobSearch,
@@ -54,5 +58,6 @@ export function useJobSearch() {
         setJobError,
         handleSearch,
         selectJob,
+        clearSelectedJobs,
     };
 }

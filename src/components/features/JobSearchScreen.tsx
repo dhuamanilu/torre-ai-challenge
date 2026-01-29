@@ -5,13 +5,13 @@ import { useApp } from '../../context/AppContext';
 export function JobSearchScreen({ onSearch, onBack }: { onSearch: () => void, onBack: () => void }) {
     const [query, setQuery] = useState('');
     const [hasSearched, setHasSearched] = useState(false);
-    const { username, setJobSearch, handleSearch, searchResults, selectJob, selectedJobs, loading, analyze } = useApp();
+    const { username, setJobSearch, handleSearch, searchResults, selectJob, selectedJobs, loading, analyze, clearSelectedJobs } = useApp();
     const [isAnalyzing, setIsAnalyzing] = useState(false);
 
-    // Auto-search disabled per user request. No pre-filling.
+    // Clean state on mount
     useEffect(() => {
-        // Clean state if needed
-    }, []);
+        clearSelectedJobs();
+    }, [clearSelectedJobs]);
 
     // Scroll-up to go back navigation removed per user request
     // useEffect(() => {
