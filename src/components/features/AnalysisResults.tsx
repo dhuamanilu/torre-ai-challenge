@@ -26,6 +26,13 @@ export function AnalysisResults() {
 
     const currentComp = comparisons[activeComparison];
 
+    // Reset learning panel when component unmounts or active comparison changes
+    React.useEffect(() => {
+        return () => {
+            setShowLearning(null);
+        };
+    }, [setShowLearning, activeComparison]);
+
     return (
         <section className="results-section" aria-label="Analysis Results">
             {comparisons.length > 1 && (
