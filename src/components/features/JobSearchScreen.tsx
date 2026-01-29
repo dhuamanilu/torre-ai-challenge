@@ -202,7 +202,7 @@ export function JobSearchScreen({ onSearch, onBack }: { onSearch: () => void, on
             </div>
             <div style={{ position: 'fixed', top: '2rem', left: '2rem', zIndex: 20 }}>
                 <button onClick={onBack} className="nav-btn" style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', fontSize: '1.2rem', fontWeight: 'bold' }}>
-                    ← NEW SEARCH
+                    ← BACK TO GALAXY
                 </button>
             </div>
         </motion.div>

@@ -51,20 +51,25 @@ function App() {
                             exit={{ opacity: 0 }}
                             style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}
                         >
+                            <div style={{ position: 'absolute', top: '2rem', left: '2rem', zIndex: 100 }}>
+                                <button
+                                    onClick={() => setView('search')}
+                                    style={{
+                                        background: 'transparent', border: 'none',
+                                        color: 'rgba(255,255,255,0.6)',
+                                        cursor: 'pointer', fontSize: '0.9rem', fontWeight: 'bold',
+                                        display: 'flex', alignItems: 'center', gap: '0.5rem',
+                                        textTransform: 'uppercase', letterSpacing: '1px'
+                                    }}
+                                >
+                                    <span>←</span> New Search
+                                </button>
+                            </div>
                             <Header />
                             <main className="main" style={{ flex: 1 }}>
                                 <section className="results-container" style={{ paddingTop: '2rem' }}>
                                     <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-                                        <button
-                                            onClick={() => setView('search')}
-                                            style={{
-                                                background: 'transparent', border: '1px solid var(--border)',
-                                                padding: '0.8rem 1.5rem', borderRadius: '8px', color: 'var(--text-secondary)',
-                                                cursor: 'pointer', fontSize: '1rem'
-                                            }}
-                                        >
-                                            ← New Search
-                                        </button>
+                                        {/* Button moved to top-left */}
                                     </div>
                                     <AnalysisResults />
                                 </section>
