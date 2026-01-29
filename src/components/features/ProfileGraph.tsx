@@ -7,17 +7,17 @@ export function ProfileGraph({ onNext, onBack }: { onNext: () => void, onBack: (
     const { profile } = useApp();
     const fgRef = useRef<ForceGraphMethods>(null);
     const [highlightNodes, setHighlightNodes] = useState(new Set());
-    const [highlightLinks, setHighlightLinks] = useState(new Set());
     const [hoverNode, setHoverNode] = useState<any>(null);
+    const [isAutoRotating, setIsAutoRotating] = useState(true);
 
-    // Color Palette per Category
+    // Narrower Color Palette (Cool/Deep Space Spectrum)
     const CATEGORY_COLORS: Record<string, string> = {
-        'Frontend': '#d946ef', // Magenta
+        'Frontend': '#06b6d4', // Cyan
         'Backend': '#3b82f6',  // Blue
-        'Mobile': '#10b981',   // Emerald
-        'Tools': '#f59e0b',    // Amber
-        'General': '#8b5cf6',  // Violet
-        'Other': '#64748b'     // Slate
+        'Mobile': '#8b5cf6',   // Violet
+        'Tools': '#64748b',    // Slate
+        'General': '#f8fafc',  // White/Silver
+        'Other': '#475569'     // Dark Slate
     };
 
     const graphData = useMemo(() => {
@@ -25,95 +25,141 @@ export function ProfileGraph({ onNext, onBack }: { onNext: () => void, onBack: (
 
         const nodes: any[] = [];
         const links: any[] = [];
+        const activeCategories = new Set<string>();
 
-        // Root Node (The User)
-        nodes.push({
-            id: 'root',
-            name: profile.person.name,
-            val: 20,
-            color: '#ffffff',
-            type: 'root'
-        });
+        // 1. Process Skills first to identify active categories
+        const skillNodes: any[] = [];
+        const skillLinks: any[] = [];
 
-        // Category Nodes
-        const categories = Object.keys(SKILL_CATEGORIES);
-        if (!categories.includes('Other')) categories.push('Other'); // Ensure Other exists
-
-        categories.forEach(cat => {
-            nodes.push({
-                id: cat,
-                name: cat,
-                val: 10,
-                color: CATEGORY_COLORS[cat] || '#888',
-                type: 'category'
-            });
-            links.push({ source: 'root', target: cat });
-        });
-
-        // Skill Nodes
-        profile.strengths.slice(0, 40).forEach(skill => {
+        profile.strengths.slice(0, 50).forEach(skill => {
             let parent = 'Other';
             const sName = skill.name.toLowerCase();
 
+            // Find category
             for (const [cat, keywords] of Object.entries(SKILL_CATEGORIES)) {
                 if (keywords.some(k => sName.includes(k))) {
                     parent = cat;
                     break;
                 }
             }
-            if (!categories.includes(parent)) parent = 'Other';
 
-            nodes.push({
+            // Only map if category exists in our filtered list (or matches Other)
+            // But we want to find *which* categories have skills.
+            activeCategories.add(parent);
+
+            skillNodes.push({
                 id: skill.id,
                 name: skill.name,
-                val: skill.proficiency === 'master' ? 6 : 4,
+                val: skill.proficiency === 'master' ? 6 : 3,
                 color: CATEGORY_COLORS[parent] || '#64748b',
-                type: 'skill'
+                type: 'skill',
+                parent: parent
             });
-            links.push({ source: parent, target: skill.id });
+            skillLinks.push({ source: parent, target: skill.id });
         });
+
+        // 2. Add Root Node
+        nodes.push({
+            id: 'root',
+            name: profile.person.name,
+            val: 15,
+            color: '#ffffff',
+            type: 'root'
+        });
+
+        // 3. Add ONLY Active Category Nodes
+        activeCategories.forEach(cat => {
+            nodes.push({
+                id: cat,
+                name: cat,
+                val: 8,
+                color: CATEGORY_COLORS[cat] || '#888',
+                type: 'category'
+            });
+            links.push({ source: 'root', target: cat });
+        });
+
+        // Add skill nodes and links
+        nodes.push(...skillNodes);
+        links.push(...skillLinks);
 
         return { nodes, links };
     }, [profile]);
 
-    // Physics Engine Tuning
+    // Auto-Navigation / Camera Orbit
+    useEffect(() => {
+        let frameId: number;
+        let angle = 0;
+
+        const animate = () => {
+            if (fgRef.current && isAutoRotating) {
+                angle += 0.001; // Slow rotation
+                const distance = 400;
+                // Orbit camera around center
+                // Note: 2D force graph doesn't support 3D camera orbit easily, 
+                // but we can simulate "exploration" by gentle panning or rotating the view coordinates
+                // Actually, let's allow the "Sea" physics to handle the movement aesthetic 
+                // and use this for strictly camera "breathing" zooms
+                fgRef.current.zoom(2.5 + Math.sin(angle * 2) * 0.1, 0);
+            }
+            frameId = requestAnimationFrame(animate);
+        };
+        // frameId = requestAnimationFrame(animate); 
+        // Disabling camera orbit in favor of graph physics for now to avoid motion sickness
+        return () => cancelAnimationFrame(frameId);
+    }, [isAutoRotating]);
+
+
+    // Initial Physics Setup
     useEffect(() => {
         if (fgRef.current) {
             fgRef.current.d3Force('charge')?.strength(-100);
             fgRef.current.d3Force('link')?.distance(70);
-            fgRef.current.d3Force('collide')?.radius((node: any) => (node.val || 4) * 2.5);
+
+            // "Sea" Current - Continuous gentle drift
+            fgRef.current.d3Force('sea', (alpha) => {
+                const nodes = graphData.nodes as any[];
+                nodes.forEach(n => {
+                    // Vortex / Galaxy Spin
+                    const dy = n.y;
+                    const dx = n.x;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist > 0) {
+                        const falloff = Math.max(0.1, 1 - dist / 1000);
+                        // Tangential force
+                        n.vx += (dy / dist) * 0.5 * alpha * falloff;
+                        n.vy += (-dx / dist) * 0.5 * alpha * falloff;
+                    }
+                });
+            });
+
+            setTimeout(() => {
+                fgRef.current?.zoom(2.2, 2000);
+            }, 500);
         }
     }, [graphData]);
 
-    // Cleanup: Removed d3ReheatSimulation loop to prevent flickering/lag
 
     const handleNodeHover = (node: any) => {
         setHoverNode(node);
-        const newHighlights = new Set<string>();
-        const newLinks = new Set<string>();
-
-        if (node) {
-            newHighlights.add(node.id);
-            node.neighbors?.forEach((neighbor: any) => newHighlights.add(neighbor.id));
-            node.links?.forEach((link: any) => newLinks.add(link));
-        }
-
-        setHighlightNodes(newHighlights);
-        setHighlightLinks(newLinks);
-
         document.body.style.cursor = node ? 'pointer' : 'default';
+        setIsAutoRotating(!node); // Pause auto-effects on hover
     };
 
-    // Optimized Canvas Rendering (Simple Layers)
+    const handleNodeClick = (node: any) => {
+        if (node && fgRef.current) {
+            // Zoom to node and its cluster
+            const scale = node.type === 'category' ? 4 : 3;
+            fgRef.current.centerAt(node.x, node.y, 1000);
+            fgRef.current.zoom(scale, 1000);
+            setIsAutoRotating(false); // Stop auto-nav on manual interaction
+        }
+    };
+
     const paintNode = useCallback((node: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
-        // SAFETY: Check coordinates
         if (!Number.isFinite(node.x) || !Number.isFinite(node.y)) return;
 
         const isHovered = node === hoverNode;
-        const isNeighbor = highlightNodes.has(node.id);
-        const isDimmed = hoverNode && !isHovered && !isNeighbor;
-
-        const label = node.name;
         const fontSize = 12 / globalScale;
         const r = node.val || 4;
         const x = node.x;
@@ -121,65 +167,77 @@ export function ProfileGraph({ onNext, onBack }: { onNext: () => void, onBack: (
 
         ctx.save();
 
-        if (isDimmed) {
-            ctx.globalAlpha = 0.1;
+        // No auto-dimming to prevent flickering
+
+        // Glow
+        if (isHovered || node.type === 'category') {
+            ctx.beginPath();
+            ctx.arc(x, y, r * 3, 0, 2 * Math.PI, false);
+            ctx.fillStyle = node.color;
+            ctx.globalAlpha = 0.2;
+            ctx.fill();
         }
 
-        // Draw Glow (Simple Alpha Circle - Faster than Gradient)
-        ctx.beginPath();
-        const glowRadius = isHovered ? r * 4 : r * 2.5;
-        ctx.arc(x, y, glowRadius, 0, 2 * Math.PI, false);
-        ctx.fillStyle = node.color || '#fff';
-        ctx.globalAlpha = isDimmed ? 0.05 : 0.15;
-        ctx.fill();
-
-        // Draw Core
+        // Core
         ctx.beginPath();
         ctx.arc(x, y, r, 0, 2 * Math.PI, false);
-        ctx.fillStyle = node.color || '#fff';
-        ctx.globalAlpha = isDimmed ? 0.2 : 1;
+        ctx.fillStyle = node.color;
+        ctx.globalAlpha = 1;
         ctx.fill();
 
-        // Draw Label
-        if (node.type === 'root' || node.type === 'category' || isHovered || globalScale > 2) {
-            ctx.globalAlpha = isDimmed ? 0.2 : 0.9;
-            ctx.font = `${node.type === 'root' ? 'bold' : ''} ${fontSize}px Sans-Serif`;
+        // Label interaction
+        const showLabel = node.type === 'root' || node.type === 'category' || isHovered || globalScale > 2.5;
+        if (showLabel) {
+            ctx.font = `${node.type === 'category' ? '600' : ''} ${fontSize}px Sans-Serif`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillStyle = '#fff';
             const textY = y + r + fontSize + 2;
-            ctx.fillText(label, x, textY);
+            ctx.fillText(node.name, x, textY);
         }
 
         ctx.restore();
-    }, [hoverNode, highlightNodes]);
+    }, [hoverNode]);
 
     return (
         <div style={{ position: 'fixed', inset: 0, background: '#050505', overflow: 'hidden' }}>
-            {/* UI Overlay */}
+
+            {/* Back Button (Reset View) */}
             <div style={{ position: 'absolute', top: '2rem', left: '2rem', zIndex: 10 }}>
-                <button onClick={onBack} className="nav-btn" style={{ padding: '0.8rem 1.5rem', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: 'white', borderRadius: '8px', cursor: 'pointer' }}>
-                    ← BACK TO GALAXY
+                <button onClick={onBack} className="nav-btn" style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: 'rgba(255,255,255,0.4)',
+                    cursor: 'pointer',
+                    fontSize: '1rem',
+                    textTransform: 'uppercase',
+                    letterSpacing: '2px'
+                }}>
+                    ← Back to Orbit
                 </button>
             </div>
 
-            <div style={{ position: 'absolute', bottom: '3rem', width: '100%', textAlign: 'center', zIndex: 10, pointerEvents: 'none' }}>
+            <div style={{ position: 'absolute', bottom: '2rem', width: '100%', textAlign: 'center', zIndex: 10, pointerEvents: 'none' }}>
                 <button
                     onClick={onNext}
                     style={{
                         pointerEvents: 'auto',
-                        background: 'linear-gradient(45deg, #d946ef, #8b5cf6)',
+                        background: 'linear-gradient(90deg, #3b82f6, #06b6d4)',
                         border: 'none',
                         color: 'white',
                         padding: '1rem 3rem',
                         fontSize: '1.2rem',
                         fontWeight: 'bold',
                         borderRadius: '50px',
-                        boxShadow: '0 0 20px rgba(139, 92, 246, 0.5)',
-                        cursor: 'pointer'
+                        boxShadow: '0 0 30px rgba(6, 182, 212, 0.4)',
+                        cursor: 'pointer',
+                        letterSpacing: '1px',
+                        transition: 'transform 0.2s'
                     }}
+                    onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                    onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                 >
-                    EXPLORE OPPORTUNITIES 🚀
+                    EXPLORE OPPORTUNITIES
                 </button>
             </div>
 
@@ -191,11 +249,11 @@ export function ProfileGraph({ onNext, onBack }: { onNext: () => void, onBack: (
                 nodeVal="val"
                 nodeCanvasObject={paintNode}
                 onNodeHover={handleNodeHover}
-                linkColor={() => 'rgba(255,255,255,0.15)'}
-                linkWidth={1}
-                d3AlphaDecay={0.02}
-                d3VelocityDecay={0.4}
-                onEngineStop={() => fgRef.current?.zoomToFit(400, 50)}
+                onNodeClick={handleNodeClick}
+                linkColor={() => 'rgba(255,255,255,0.2)'}
+                linkWidth={1.5}
+                d3AlphaDecay={0.01}
+                d3VelocityDecay={0.4} // Low friction for drift
             />
         </div>
     );
