@@ -123,8 +123,10 @@ export function JobSearchScreen({ onSearch, onBack }: { onSearch: () => void, on
                                 borderRadius: '16px',
                                 padding: '1rem',
                                 maxHeight: '60vh',
-                                overflowY: 'auto'
+                                overflowY: 'auto',
+                                touchAction: 'pan-y' // Ensure touch scroll works on mobile
                             }}
+                            data-lenis-prevent // Prevent Lenis from hijacking scroll events here
                         >
                             <div className="results-grid" style={{ display: 'grid', gap: '0.5rem', gridTemplateColumns: '1fr' }}>
                                 {searchResults.map((job) => {
