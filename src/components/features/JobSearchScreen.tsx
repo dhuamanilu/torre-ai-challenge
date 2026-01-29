@@ -13,17 +13,10 @@ export function JobSearchScreen({ onSearch, onBack }: { onSearch: () => void, on
         // Clean state if needed
     }, []);
 
-    // Scroll-up to go back navigation
-    useEffect(() => {
-        const handleWheel = (e: WheelEvent) => {
-            // If at the top and scrolling up
-            if (window.scrollY === 0 && e.deltaY < -50) {
-                onBack();
-            }
-        };
-        window.addEventListener('wheel', handleWheel);
-        return () => window.removeEventListener('wheel', handleWheel);
-    }, [onBack]);
+    // Scroll-up to go back navigation removed per user request
+    // useEffect(() => {
+    //     // Clean state if needed
+    // }, []);
 
     const doSearch = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -207,7 +200,7 @@ export function JobSearchScreen({ onSearch, onBack }: { onSearch: () => void, on
                     <div style={{ marginTop: '2rem', color: 'var(--text-secondary)' }}>No jobs found. Try searching for specific roles like "Senior Developer" or "Project Manager".</div>
                 )}
             </div>
-            <div style={{ position: 'absolute', top: '2rem', left: '2rem' }}>
+            <div style={{ position: 'fixed', top: '2rem', left: '2rem', zIndex: 20 }}>
                 <button onClick={onBack} className="nav-btn" style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', fontSize: '1.2rem', fontWeight: 'bold' }}>
                     ← NEW SEARCH
                 </button>
