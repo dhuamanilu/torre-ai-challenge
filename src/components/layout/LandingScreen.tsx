@@ -68,6 +68,7 @@ export function LandingScreen({ onComplete }: { onComplete: () => void }) {
                 background: 'var(--bg-primary)', overflow: 'hidden',
                 cursor: 'default' // Ensure default cursor everywhere
             }}
+            exit={{ opacity: 0, scale: 1.1, filter: 'blur(10px)', transition: { duration: 0.8 } }}
         >
             <AnimatePresence>
                 {showParticles && (
