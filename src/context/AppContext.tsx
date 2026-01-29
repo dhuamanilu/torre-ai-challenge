@@ -34,7 +34,7 @@ interface AppContextType {
     profile: TorreProfile | null;
     profilePreview: TorreProfile | null;
     loadingProfile: boolean;
-    loadProfile: () => Promise<void>;
+    loadProfile: (username?: string) => Promise<void>;
 
     // Job Search
     jobSearch: string;
