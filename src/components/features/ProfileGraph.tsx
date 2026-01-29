@@ -2,6 +2,7 @@ import React, { useMemo, useRef, useState, useCallback, useEffect } from 'react'
 import ForceGraph2D, { ForceGraphMethods } from 'react-force-graph-2d';
 import { useApp } from '../../context/AppContext';
 import { SKILL_CATEGORIES } from '../../utils/skillCategorizer';
+import { ParticleBackground } from '../effects/ParticleBackground';
 
 export function ProfileGraph({ onNext, onBack }: { onNext: () => void, onBack: () => void }) {
     const { profile } = useApp();
@@ -96,16 +97,11 @@ export function ProfileGraph({ onNext, onBack }: { onNext: () => void, onBack: (
                 angle += 0.001; // Slow rotation
                 const distance = 400;
                 // Orbit camera around center
-                // Note: 2D force graph doesn't support 3D camera orbit easily, 
-                // but we can simulate "exploration" by gentle panning or rotating the view coordinates
-                // Actually, let's allow the "Sea" physics to handle the movement aesthetic 
-                // and use this for strictly camera "breathing" zooms
                 fgRef.current.zoom(2.5 + Math.sin(angle * 2) * 0.1, 0);
             }
             frameId = requestAnimationFrame(animate);
         };
         // frameId = requestAnimationFrame(animate); 
-        // Disabling camera orbit in favor of graph physics for now to avoid motion sickness
         return () => cancelAnimationFrame(frameId);
     }, [isAutoRotating]);
 
@@ -167,33 +163,47 @@ export function ProfileGraph({ onNext, onBack }: { onNext: () => void, onBack: (
 
         ctx.save();
 
-        // No auto-dimming to prevent flickering
+        // Star / Planet Glow Effect
+        const glowRadius = r * (isHovered || node.type === 'category' ? 4 : 2);
+        const gradient = ctx.createRadialGradient(x, y, r * 0.5, x, y, glowRadius);
 
-        // Glow
-        if (isHovered || node.type === 'category') {
-            ctx.beginPath();
-            ctx.arc(x, y, r * 3, 0, 2 * Math.PI, false);
-            ctx.fillStyle = node.color;
-            ctx.globalAlpha = 0.2;
-            ctx.fill();
-        }
+        gradient.addColorStop(0, node.color); // Core
+        gradient.addColorStop(0.4, `${node.color}40`); // Mid glow
+        gradient.addColorStop(1, 'transparent'); // Fade out
 
-        // Core
         ctx.beginPath();
-        ctx.arc(x, y, r, 0, 2 * Math.PI, false);
-        ctx.fillStyle = node.color;
-        ctx.globalAlpha = 1;
+        ctx.arc(x, y, glowRadius, 0, 2 * Math.PI, false);
+        ctx.fillStyle = gradient;
         ctx.fill();
+
+        // Solid Core (smaller)
+        ctx.beginPath();
+        ctx.arc(x, y, r * 0.8, 0, 2 * Math.PI, false);
+        ctx.fillStyle = isHovered ? '#fff' : node.color; // White core on hover
+        ctx.fill();
+
+        // Ring for Categories
+        if (node.type === 'category') {
+            ctx.beginPath();
+            ctx.arc(x, y, r * 1.5, 0, 2 * Math.PI, false);
+            ctx.strokeStyle = node.color;
+            ctx.lineWidth = 0.5 / globalScale;
+            ctx.stroke();
+        }
 
         // Label interaction
         const showLabel = node.type === 'root' || node.type === 'category' || isHovered || globalScale > 2.5;
         if (showLabel) {
-            ctx.font = `${node.type === 'category' ? '600' : ''} ${fontSize}px Sans-Serif`;
+            ctx.font = `${node.type === 'category' ? '600' : ''} ${fontSize}px "Inter", sans-serif`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillStyle = '#fff';
-            const textY = y + r + fontSize + 2;
+            // Add shadow to text for readability against particles
+            ctx.shadowColor = 'black';
+            ctx.shadowBlur = 4;
+            const textY = y + r + fontSize + 4;
             ctx.fillText(node.name, x, textY);
+            ctx.shadowBlur = 0; // Reset
         }
 
         ctx.restore();
@@ -201,9 +211,13 @@ export function ProfileGraph({ onNext, onBack }: { onNext: () => void, onBack: (
 
     return (
         <div style={{ position: 'fixed', inset: 0, background: '#050505', overflow: 'hidden' }}>
+            {/* 1. Background Layer */}
+            <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
+                <ParticleBackground />
+            </div>
 
             {/* Back Button (Reset View) */}
-            <div style={{ position: 'absolute', top: '2rem', left: '2rem', zIndex: 10 }}>
+            <div style={{ position: 'absolute', top: '2rem', left: '2rem', zIndex: 20 }}>
                 <button onClick={onBack} className="nav-btn" style={{
                     background: 'transparent',
                     border: 'none',
@@ -211,50 +225,67 @@ export function ProfileGraph({ onNext, onBack }: { onNext: () => void, onBack: (
                     cursor: 'pointer',
                     fontSize: '1rem',
                     textTransform: 'uppercase',
-                    letterSpacing: '2px'
+                    letterSpacing: '2px',
+                    fontWeight: 600
                 }}>
                     ← Back to Orbit
                 </button>
             </div>
 
-            <div style={{ position: 'absolute', bottom: '2rem', width: '100%', textAlign: 'center', zIndex: 10, pointerEvents: 'none' }}>
+            {/* CTA Button */}
+            <div style={{ position: 'absolute', bottom: '3rem', width: '100%', textAlign: 'center', zIndex: 20, pointerEvents: 'none' }}>
                 <button
                     onClick={onNext}
                     style={{
                         pointerEvents: 'auto',
-                        background: 'linear-gradient(90deg, #3b82f6, #06b6d4)',
-                        border: 'none',
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        backdropFilter: 'blur(10px)',
+                        border: '1px solid rgba(255,255,255,0.2)',
                         color: 'white',
                         padding: '1rem 3rem',
-                        fontSize: '1.2rem',
-                        fontWeight: 'bold',
+                        fontSize: '1rem',
+                        fontWeight: '600',
                         borderRadius: '50px',
-                        boxShadow: '0 0 30px rgba(6, 182, 212, 0.4)',
                         cursor: 'pointer',
-                        letterSpacing: '1px',
-                        transition: 'transform 0.2s'
+                        letterSpacing: '2px',
+                        textTransform: 'uppercase',
+                        transition: 'all 0.3s ease',
+                        boxShadow: '0 0 20px rgba(0,0,0,0.5)'
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
-                    onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                    onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                        e.currentTarget.style.borderColor = 'var(--accent)';
+                        e.currentTarget.style.boxShadow = '0 0 30px rgba(99, 102, 241, 0.4)';
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                    }}
+                    onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)';
+                        e.currentTarget.style.boxShadow = '0 0 20px rgba(0,0,0,0.5)';
+                        e.currentTarget.style.transform = 'translateY(0)';
+                    }}
                 >
-                    EXPLORE OPPORTUNITIES
+                    Explore Opportunities
                 </button>
             </div>
 
-            <ForceGraph2D
-                ref={fgRef as any}
-                graphData={graphData}
-                backgroundColor="#050505"
-                nodeLabel="name"
-                nodeVal="val"
-                nodeCanvasObject={paintNode}
-                onNodeHover={handleNodeHover}
-                onNodeClick={handleNodeClick}
-                linkColor={() => 'rgba(255,255,255,0.2)'}
-                linkWidth={1.5}
-                d3AlphaDecay={0.01}
-                d3VelocityDecay={0.4} // Low friction for drift
-            />
+            {/* 2. Graph Layer */}
+            <div style={{ position: 'relative', zIndex: 10 }}>
+                <ForceGraph2D
+                    ref={fgRef as any}
+                    graphData={graphData}
+                    backgroundColor="rgba(0,0,0,0)" // Transparent!
+                    nodeLabel="name"
+                    nodeVal="val"
+                    nodeCanvasObject={paintNode}
+                    onNodeHover={handleNodeHover}
+                    onNodeClick={handleNodeClick}
+                    linkColor={() => 'rgba(100, 200, 255, 0.1)'} // Subtler cyan links
+                    linkWidth={1}
+                    d3AlphaDecay={0.01}
+                    d3VelocityDecay={0.4}
+                />
+            </div>
         </div>
     );
 }
